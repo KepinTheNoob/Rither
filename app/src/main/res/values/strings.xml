@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Rither</string>
+    <string name="login" />
+    <string name="signup" />
+    <string name="home" />
+    <string name="offerRide" />
+    <string name="onBoarding" />
+    <string name="profile" />
+    <string name="rideDetails" />
+    <string name="settings" />
+</resources>
