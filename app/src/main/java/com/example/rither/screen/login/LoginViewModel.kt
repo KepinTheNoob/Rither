@@ -4,6 +4,8 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.FirebaseFirestore
 
 class LoginViewModel : ViewModel() {
     private val auth : FirebaseAuth = FirebaseAuth.getInstance()
@@ -16,11 +18,11 @@ class LoginViewModel : ViewModel() {
     }
 
     fun checkAuthStatus() {
-        if(auth.currentUser == null) {
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            _authState.value = AuthState.Authenticated(user = currentUser)
+        } else {
             _authState.value = AuthState.Unauthenticated
-        }
-        else {
-            _authState.value = AuthState.Authenticated
         }
     }
 
@@ -37,7 +39,13 @@ class LoginViewModel : ViewModel() {
                     val user = auth.currentUser
                     if (user != null) {
                         if (user.isEmailVerified) {
-                            _authState.value = AuthState.Authenticated
+                            // Update Firestore verified field
+                            FirebaseFirestore.getInstance()
+                                .collection("users")
+                                .document(user.uid)
+                                .update("verified", true)
+
+                            _authState.value = AuthState.Authenticated(user)
                         } else {
                             auth.signOut()
                             _authState.value = AuthState.Info("Please verify your email before logging in.")
@@ -55,7 +63,7 @@ class LoginViewModel : ViewModel() {
 }
 
 sealed class AuthState {
-    object Authenticated : AuthState()
+    data class Authenticated(val user: FirebaseUser) : AuthState()
     object Unauthenticated : AuthState()
     object Loading : AuthState()
     data class Info(val message: String) : AuthState()

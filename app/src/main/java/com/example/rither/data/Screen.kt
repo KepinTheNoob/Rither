@@ -12,4 +12,6 @@ enum class Screen(@StringRes val title: Int) {
     Profile(title = R.string.profile),
     RideDetails(title = R.string.rideDetails),
     Setting(title = R.string.settings),
+    VerifyEmail(title = R.string.verifyEmail),
+    Notifications(title = R.string.notifications)
 }

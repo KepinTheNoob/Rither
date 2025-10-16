@@ -2,6 +2,7 @@ package com.example.rither.screen.home
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -55,12 +56,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.rither.data.Screen
+import com.example.rither.screen.myTrips.MyTripsScreen
+import com.example.rither.screen.offerRide.OfferRideScreen
 import com.example.rither.ui.theme.RitherTheme
 
 @Composable
 fun HomeScreen(
     navController: NavController
 ) {
+    var selectedTab by remember { mutableIntStateOf(0) }
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -72,56 +78,59 @@ fun HomeScreen(
             contentPadding = PaddingValues(vertical = 16.dp)
         ) {
             item {
-                TopBarSection()
+                TopBarSection(navController = navController)
                 Spacer(modifier = Modifier.height(24.dp))
-                RideTypeSelector()
-                Spacer(modifier = Modifier.height(24.dp))
-                SearchDestinationField()
-                Spacer(modifier = Modifier.height(16.dp))
-                MapPreviewCard()
-                Spacer(modifier = Modifier.height(24.dp))
-                Text(
-                    text = "Suggested rides",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+
+                // Pass the selected tab + a callback to RideTypeSelector
+                RideTypeSelector(
+                    selectedIndex = selectedTab,
+                    onTabSelected = { selectedTab = it }
                 )
-                Spacer(modifier = Modifier.height(16.dp))
+
+                Spacer(modifier = Modifier.height(24.dp))
             }
             item {
-                RideInfoCard(
-                    driverInitial = "A",
-                    driverName = "Amira",
-                    rating = 4.8f,
-                    origin = "Kemang",
-                    destination = "Senayan",
-                    carModel = "Toyota Yaris",
-                    rideTime = "Today, 5:30 PM",
-                    price = "$4.50",
-                    seatsAvailable = 2,
-                    initialBackgroundColor = Color(0xFFE0E0E0)
-                )
-                Spacer(modifier = Modifier.height(16.dp))
+                when (selectedTab) {
+                    0 -> FindRideSection()
+                    1 -> OfferRideSection()
+                    2 -> MyTripsSection()
+                }
             }
-            item {
-                RideInfoCard(
-                    driverInitial = "R",
-                    driverName = "Rizky",
-                    rating = 4.7f,
-                    origin = "BSD",
-                    destination = "Kuningan",
-                    carModel = "Honda Jazz",
-                    rideTime = "Today, 6:15 PM",
-                    price = "$5.80",
-                    seatsAvailable = 1,
-                    initialBackgroundColor = Color(0xFFD1C4E9)
-                )
-            }
+//            item {
+//                RideInfoCard(
+//                    driverInitial = "A",
+//                    driverName = "Amira",
+//                    rating = 4.8f,
+//                    origin = "Kemang",
+//                    destination = "Senayan",
+//                    carModel = "Toyota Yaris",
+//                    rideTime = "Today, 5:30 PM",
+//                    price = "$4.50",
+//                    seatsAvailable = 2,
+//                    initialBackgroundColor = Color(0xFFE0E0E0)
+//                )
+//                Spacer(modifier = Modifier.height(16.dp))
+//            }
+//            item {
+//                RideInfoCard(
+//                    driverInitial = "R",
+//                    driverName = "Rizky",
+//                    rating = 4.7f,
+//                    origin = "BSD",
+//                    destination = "Kuningan",
+//                    carModel = "Honda Jazz",
+//                    rideTime = "Today, 6:15 PM",
+//                    price = "$5.80",
+//                    seatsAvailable = 1,
+//                    initialBackgroundColor = Color(0xFFD1C4E9)
+//                )
+//            }
         }
     }
 }
 
 @Composable
-fun TopBarSection() {
+fun TopBarSection(navController: NavController) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -147,7 +156,7 @@ fun TopBarSection() {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = "Hi Kevin!",
+                text = "Hi Andrew!",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -160,7 +169,7 @@ fun TopBarSection() {
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        IconButton(onClick = { /*TODO*/ }) {
+        IconButton(onClick = { navController.navigate(Screen.Setting.name) }) {
             Icon(
                 imageVector = Icons.Default.Settings,
                 contentDescription = "Settings",
@@ -171,7 +180,10 @@ fun TopBarSection() {
             modifier = Modifier
                 .size(32.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary),
+                .background(MaterialTheme.colorScheme.primary)
+                .clickable(
+                    onClick = { navController.navigate(Screen.Profile.name) }
+                ),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -185,8 +197,10 @@ fun TopBarSection() {
 }
 
 @Composable
-fun RideTypeSelector() {
-    val selectedIndex = remember { mutableIntStateOf(0) }
+fun RideTypeSelector(
+    selectedIndex: Int,
+    onTabSelected: (Int) -> Unit
+) {
     val items = listOf("Find Ride", "Offer Ride", "My Trips")
 
     Row(
@@ -194,9 +208,9 @@ fun RideTypeSelector() {
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items.forEachIndexed { index, text ->
-            val isSelected = selectedIndex.intValue == index
+            val isSelected = selectedIndex == index
             Button(
-                onClick = { selectedIndex.intValue = index },
+                onClick = { onTabSelected(index) },
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(50),
                 colors = if (isSelected) {
@@ -204,16 +218,16 @@ fun RideTypeSelector() {
                 } else {
                     ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
                 },
-                border = if (!isSelected) BorderStroke(
-                    1.dp,
-                    MaterialTheme.colorScheme.outline
-                ) else null,
+                border = if (!isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.outline) else null,
                 elevation = if (isSelected) ButtonDefaults.buttonElevation(defaultElevation = 2.dp) else null
             ) {
                 Text(
                     text = text,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (isSelected)
+                        MaterialTheme.colorScheme.onPrimary
+                    else
+                        MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -306,7 +320,6 @@ fun RideInfoCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.Top
         ) {
-            // Left Side: Initial and Car
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.width(IntrinsicSize.Min)
@@ -343,8 +356,6 @@ fun RideInfoCard(
             }
 
             Spacer(modifier = Modifier.width(16.dp))
-
-            // Right Side: Ride Details
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -399,6 +410,51 @@ fun RideInfoCard(
         }
     }
 }
+
+@Composable
+fun FindRideSection() {
+    SearchDestinationField()
+    Spacer(modifier = Modifier.height(16.dp))
+    MapPreviewCard()
+    Spacer(modifier = Modifier.height(24.dp))
+    RideInfoCard(
+        driverInitial = "A",
+        driverName = "Amira",
+        rating = 4.8f,
+        origin = "Kemang",
+        destination = "Senayan",
+        carModel = "Toyota Yaris",
+        rideTime = "Today, 5:30 PM",
+        price = "$4.50",
+        seatsAvailable = 2,
+        initialBackgroundColor = Color(0xFFE0E0E0)
+    )
+    Spacer(modifier = Modifier.height(16.dp))
+
+    RideInfoCard(
+        driverInitial = "R",
+        driverName = "Rizky",
+        rating = 4.7f,
+        origin = "BSD",
+        destination = "Kuningan",
+        carModel = "Honda Jazz",
+        rideTime = "Today, 6:15 PM",
+        price = "$5.80",
+        seatsAvailable = 1,
+        initialBackgroundColor = Color(0xFFD1C4E9)
+    )
+}
+
+@Composable
+fun OfferRideSection() {
+    OfferRideScreen()
+}
+
+@Composable
+fun MyTripsSection() {
+    MyTripsScreen()
+}
+
 
 @Composable
 private fun InfoRow(icon: ImageVector, text: String) {

@@ -8,4 +8,6 @@
     <string name="profile" />
     <string name="rideDetails" />
     <string name="settings" />
+    <string name="verifyEmail" />
+    <string name="notifications" />
 </resources>

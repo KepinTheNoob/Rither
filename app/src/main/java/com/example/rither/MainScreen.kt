@@ -5,7 +5,6 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -13,10 +12,13 @@ import androidx.navigation.compose.rememberNavController
 import com.example.rither.data.Screen
 import com.example.rither.screen.home.HomeScreen
 import com.example.rither.screen.login.LoginScreen
+import com.example.rither.screen.notifications.NotificationsScreen
+import com.example.rither.screen.notifications.sampleNotifications
 import com.example.rither.screen.offerRide.OfferRideScreen
 import com.example.rither.screen.profile.ProfileScreen
 import com.example.rither.screen.rideDetails.RideDetailScreen
 import com.example.rither.screen.signup.SignupScreen
+import com.example.rither.screen.verifyEmail.VerifyEmailScreen
 
 @Composable
 fun MainContent(
@@ -58,6 +60,17 @@ fun MainContent(
 //                navController = navController
             )
         }
+        composable(Screen.VerifyEmail.name) {
+            VerifyEmailScreen(
+                navController = navController
+            )
+        }
+        composable(Screen.Notifications.name) {
+            NotificationsScreen(
+                notifications = sampleNotifications,
+                navController = navController
+            )
+        }
     }
 }
 
@@ -66,9 +79,11 @@ fun MainContent(
 fun MainScreen(
     context: Context,
     activity: Activity,
+    intent: MainActivity,
 ) {
     val navController = rememberNavController()
 //    val auth = FirebaseAuth.getInstance()
+    val intent = intent
 
     MainContent(
         navController = navController,

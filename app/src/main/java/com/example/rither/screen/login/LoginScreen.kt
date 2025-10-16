@@ -36,6 +36,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.navigation.NavController
 import com.example.rither.R
 import com.example.rither.data.Screen
+import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.tasks.await
 
 
 @Composable
@@ -52,14 +54,21 @@ fun LoginScreen(
     val authState = loginViewModel.authState.observeAsState()
     val context = LocalContext.current
 
-    LaunchedEffect(authState.value) {
-        when(authState.value) {
-            is AuthState.Authenticated -> navController.navigate(Screen.Home.name) {
-                popUpTo(Screen.Login.name) { inclusive = true }
+    LaunchedEffect(Unit) {
+        val user = FirebaseAuth.getInstance().currentUser
+        if (user != null) {
+            try {
+                user.reload().await()
+                if (!user.isEmailVerified) {
+                    FirebaseAuth.getInstance().signOut()
+                } else {
+                    navController.navigate(Screen.Signup.name) {
+                        popUpTo(Screen.Login.name) { inclusive = true }
+                    }
+                }
+            } catch (e: Exception) {
+                FirebaseAuth.getInstance().signOut()
             }
-            is AuthState.Error -> Toast.makeText(context,
-                (authState.value as AuthState.Error).message, Toast.LENGTH_SHORT).show()
-            else -> Unit
         }
     }
 

@@ -16,10 +16,17 @@
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.Rither">
-            <intent-filter>
+            <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data
+                    android:scheme="https"
+                    android:host="rither-5d185.firebaseapp.com"
+                    android:pathPrefix="/__/auth/links" />
             </intent-filter>
         </activity>
     </application>

@@ -58,7 +58,7 @@ fun SignupScreen(
 
     LaunchedEffect(authState.value) {
         when(authState.value) {
-            is AuthState.Authenticated -> navController.navigate(Screen.Login.name) {
+            is AuthState.Authenticated -> navController.navigate(Screen.VerifyEmail.name) {
                 popUpTo(Screen.Signup.name) { inclusive = true }
             }
 
@@ -66,8 +66,7 @@ fun SignupScreen(
                 val message = (authState.value as AuthState.Info).message
                 Toast.makeText(context, message, Toast.LENGTH_LONG).show()
 
-                // Optionally redirect to Login page after message
-                navController.navigate(Screen.Login.name) {
+                navController.navigate(Screen.VerifyEmail.name) {
                     popUpTo(Screen.Signup.name) { inclusive = true }
                 }
             }

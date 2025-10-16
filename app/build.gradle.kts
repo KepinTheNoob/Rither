@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.rither"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -60,7 +60,13 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
+    implementation("com.google.android.gms:play-services-auth:21.4.0")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+
     implementation("androidx.navigation:navigation-compose:2.8.9")
     implementation("androidx.compose.material:material-icons-extended:1.5.4")
     implementation("androidx.compose.runtime:runtime-livedata:1.5.1")
+    implementation("androidx.compose.material3:material3:1.3.0")
+    implementation("androidx.compose.material3:material3-window-size-class:1.3.0")
+    implementation("com.jakewharton.threetenabp:threetenabp:1.4.6")
 }
