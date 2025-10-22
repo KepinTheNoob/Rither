@@ -1,12 +1,12 @@
 package com.example.rither.screen.home
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -40,6 +40,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,23 +50,30 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import coil.compose.rememberAsyncImagePainter
 import com.example.rither.data.Screen
 import com.example.rither.screen.myTrips.MyTripsScreen
 import com.example.rither.screen.offerRide.OfferRideScreen
+import com.example.rither.screen.signup.ProfileViewModel
 import com.example.rither.ui.theme.RitherTheme
 
 @Composable
 fun HomeScreen(
-    navController: NavController
+    navController: NavController,
+    profileViewModel: ProfileViewModel = viewModel(),
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
+    val userName by profileViewModel.userName.observeAsState("User") // Observe user name
+    val imageUrl by profileViewModel.imageUrl.observeAsState()
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -78,7 +86,11 @@ fun HomeScreen(
             contentPadding = PaddingValues(vertical = 16.dp)
         ) {
             item {
-                TopBarSection(navController = navController)
+                TopBarSection(
+                    navController = navController,
+                    userName = userName,
+                    imageUrl = imageUrl
+                )
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // Pass the selected tab + a callback to RideTypeSelector
@@ -130,23 +142,25 @@ fun HomeScreen(
 }
 
 @Composable
-fun TopBarSection(navController: NavController) {
+fun TopBarSection(
+    navController: NavController,
+    userName: String?,
+    imageUrl: String?,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-//        Image(
-//            painter = painterResource(id = android.R.drawable.sym_def_app_icon),
-//            contentDescription = "User Avatar",
-//            modifier = Modifier
-//                .size(40.dp)
-//                .clip(CircleShape),
-//            contentScale = ContentScale.Crop
-//        )
-        Icon(
-            imageVector = Icons.Default.Notifications,
-            contentDescription = "Notifications",
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        Image(
+            painter = rememberAsyncImagePainter(
+                model = imageUrl,
+            ),
+            contentDescription = "User Avatar",
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .clickable { navController.navigate(Screen.Profile.name) }, // Navigate to profile on click
+            contentScale = ContentScale.Crop
         )
         Spacer(modifier = Modifier.width(12.dp))
         Column {
@@ -176,30 +190,13 @@ fun TopBarSection(navController: NavController) {
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary)
-                .clickable(
-                    onClick = { navController.navigate(Screen.Profile.name) }
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "R",
-                color = MaterialTheme.colorScheme.onPrimary,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
-            )
-        }
     }
 }
 
 @Composable
 fun RideTypeSelector(
     selectedIndex: Int,
-    onTabSelected: (Int) -> Unit
+    onTabSelected: (Int) -> Unit,
 ) {
     val items = listOf("Find Ride", "Offer Ride", "My Trips")
 
@@ -306,57 +303,38 @@ fun RideInfoCard(
     rideTime: String,
     price: String,
     seatsAvailable: Int,
-    initialBackgroundColor: Color
+    initialBackgroundColor: Color,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(12.dp),
             verticalAlignment = Alignment.Top
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.width(IntrinsicSize.Min)
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(initialBackgroundColor),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(initialBackgroundColor),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = driverInitial,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp
-                    )
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Done,
-                        contentDescription = "Car Icon",
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = carModel,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Text(
+                    text = driverInitial,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp
+                )
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
-            Column {
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = driverName,
@@ -368,21 +346,31 @@ fun RideInfoCard(
                         imageVector = Icons.Default.Star,
                         contentDescription = "Star Rating Icon",
                         tint = Color(0xFFFFC107),
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "($rating)",
+                        text = "$rating",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold
                     )
                 }
-                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = carModel,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 Column {
                     InfoRow(icon = Icons.Default.LocationOn, text = origin)
+                    Spacer(modifier = Modifier.height(4.dp))
                     InfoRow(icon = Icons.AutoMirrored.Filled.ArrowForward, text = destination)
                 }
-                Spacer(modifier = Modifier.height(12.dp))
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
                         text = rideTime,

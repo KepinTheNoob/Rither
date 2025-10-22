@@ -2,6 +2,13 @@ package com.example.rither.screen.signup
 
 import android.os.Bundle
 import android.util.Log
+import androidx.lifecycle.viewModelScope
+import android.content.Context // Import Context
+import android.net.Uri // Import Uri
+import kotlinx.coroutines.Dispatchers // Import Dispatchers
+import kotlinx.coroutines.launch // Import launch
+import kotlinx.coroutines.withContext // Import withContext
+import java.io.File // Import File
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -14,15 +21,26 @@ import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import androidx.appcompat.app.AppCompatActivity
+import com.cloudinary.Cloudinary
+import com.cloudinary.utils.ObjectUtils
 
 class SignupViewModel : ViewModel() {
-    private val auth : FirebaseAuth = FirebaseAuth.getInstance()
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
+
+    // Add Cloudinary instance
+    private val cloudinary = Cloudinary(
+        ObjectUtils.asMap(
+            "cloud_name", "dz9p6wwzt",
+            "api_key", "723678195572612",
+            "api_secret", "97W4VIBdW1TDh8fea66oG6waYmw"
+        )
+    )
 
     private val _authState = MutableLiveData<AuthState>()
     val authState : LiveData<AuthState> = _authState
     private val _emailVerificationMessage = MutableStateFlow("")
     val emailVerificationMessage: StateFlow<String> = _emailVerificationMessage
-    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 
     init {
         checkAuthStatus()
@@ -90,7 +108,14 @@ class SignupViewModel : ViewModel() {
 //            }
 //    }
 
-    fun signup(email: String, name: String, phone: String, password: String) {
+    fun signup(
+        email: String,
+        name: String,
+        phone: String,
+        password: String,
+        imageUri: Uri?,
+        context: Context
+    ) {
         if (email.isEmpty() || password.isEmpty() || name.isEmpty() || phone.isEmpty()) {
             _authState.value = AuthState.Error("All fields are required")
             return
@@ -108,26 +133,57 @@ class SignupViewModel : ViewModel() {
 
                         // Add user to Firestore
                         val userData = hashMapOf(
-                            "email" to email,
-                            "name" to name,
-                            "phone" to phone,
-                            "verified" to false
+                            "email" to email, "name" to name, "phone" to phone, "verified" to false
                         )
-                        db.collection("users")
-                            .document(user.uid)
-                            .set(userData)
+                        db.collection("users").document(user.uid).set(userData)
+                            .addOnSuccessListener {
+                                // If an image was selected, upload it
+                                if (imageUri != null) {
+                                    uploadProfileImageToCloudinary(imageUri, user.uid, context)
+                                }
 
-                        _authState.value =
-                            AuthState.Info("Account created. Verify your email to continue.")
-                    }?.addOnFailureListener { e ->
-                        _authState.value =
-                            AuthState.Error("Failed to send verification email: ${e.message}")
+                                // Send verification email regardless of image upload status
+                                user.sendEmailVerification().addOnSuccessListener {
+                                    _authState.value = AuthState.Info("Account created. Verify your email to continue.")
+                                }.addOnFailureListener { e ->
+                                    _authState.value = AuthState.Error("User created, but failed to send verification email: ${e.message}")
+                                }
+                            }
+                            .addOnFailureListener { e ->
+                                _authState.value = AuthState.Error("Failed to save user data: ${e.message}")
+                            }
                     }
                 } else {
                     _authState.value =
                         AuthState.Error(task.exception?.message ?: "Something went wrong")
                 }
             }
+    }
+
+    private fun uploadProfileImageToCloudinary(uri: Uri, uid: String, context: Context) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val inputStream = context.contentResolver.openInputStream(uri)
+                val tempFile = File.createTempFile("signup_upload", ".jpg", context.cacheDir)
+                tempFile.outputStream().use { output ->
+                    inputStream?.copyTo(output)
+                }
+
+                val options = ObjectUtils.asMap(
+                    "public_id", uid,
+                    "overwrite", true,
+                    "resource_type", "image"
+                )
+
+                cloudinary.uploader().upload(tempFile, options)
+                tempFile.delete()
+                // We don't need to do anything with the result URL on signup
+                // as the URL is predictably based on the user's UID.
+            } catch (e: Exception) {
+                // Log the error, but don't block the user flow
+                e.printStackTrace()
+            }
+        }
     }
 
 }
