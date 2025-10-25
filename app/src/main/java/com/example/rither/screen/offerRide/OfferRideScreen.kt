@@ -161,13 +161,13 @@ fun OfferRideScreen(
                     singleLine = true,
                     shape = MaterialTheme.shapes.medium,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = SkylinePrimary,
-                        unfocusedBorderColor = SkylineOnSurface.copy(alpha = 0.2f),
-                        focusedLabelColor = SkylinePrimary,
-                        unfocusedLabelColor = SkylineOnSurface.copy(alpha = 0.6f),
-                        cursorColor = SkylinePrimary,
-                        focusedContainerColor = Color(0xFFF9FAFB),
-                        unfocusedContainerColor = Color(0xFFF9FAFB)
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
                     )
                 )
 
@@ -188,13 +188,13 @@ fun OfferRideScreen(
                     singleLine = true,
                     shape = MaterialTheme.shapes.medium,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = SkylinePrimary,
-                        unfocusedBorderColor = SkylineOnSurface.copy(alpha = 0.2f),
-                        focusedLabelColor = SkylinePrimary,
-                        unfocusedLabelColor = SkylineOnSurface.copy(alpha = 0.6f),
-                        cursorColor = SkylinePrimary,
-                        focusedContainerColor = Color(0xFFF9FAFB),
-                        unfocusedContainerColor = Color(0xFFF9FAFB)
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
                     )
                 )
 
@@ -218,13 +218,13 @@ fun OfferRideScreen(
                     enabled = false,
                     shape = MaterialTheme.shapes.medium,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = SkylinePrimary,
-                        unfocusedBorderColor = SkylineOnSurface.copy(alpha = 0.2f),
-                        focusedLabelColor = SkylinePrimary,
-                        unfocusedLabelColor = SkylineOnSurface.copy(alpha = 0.6f),
-                        cursorColor = SkylinePrimary,
-                        focusedContainerColor = Color(0xFFF9FAFB),
-                        unfocusedContainerColor = Color(0xFFF9FAFB)
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
                     )
                 )
 
@@ -248,13 +248,13 @@ fun OfferRideScreen(
                     enabled = false,
                     shape = MaterialTheme.shapes.medium,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = SkylinePrimary,
-                        unfocusedBorderColor = SkylineOnSurface.copy(alpha = 0.2f),
-                        focusedLabelColor = SkylinePrimary,
-                        unfocusedLabelColor = SkylineOnSurface.copy(alpha = 0.6f),
-                        cursorColor = SkylinePrimary,
-                        focusedContainerColor = Color(0xFFF9FAFB),
-                        unfocusedContainerColor = Color(0xFFF9FAFB)
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
                     )
                 )
 
@@ -372,13 +372,13 @@ fun OfferRideScreen(
                     singleLine = true,
                     shape = MaterialTheme.shapes.medium,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = SkylinePrimary,
-                        unfocusedBorderColor = SkylineOnSurface.copy(alpha = 0.2f),
-                        focusedLabelColor = SkylinePrimary,
-                        unfocusedLabelColor = SkylineOnSurface.copy(alpha = 0.6f),
-                        cursorColor = SkylinePrimary,
-                        focusedContainerColor = Color(0xFFF9FAFB),
-                        unfocusedContainerColor = Color(0xFFF9FAFB)
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
                     )
                 )
 
@@ -402,13 +402,13 @@ fun OfferRideScreen(
                     singleLine = true,
                     shape = MaterialTheme.shapes.medium,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = SkylinePrimary,
-                        unfocusedBorderColor = SkylineOnSurface.copy(alpha = 0.2f),
-                        focusedLabelColor = SkylinePrimary,
-                        unfocusedLabelColor = SkylineOnSurface.copy(alpha = 0.6f),
-                        cursorColor = SkylinePrimary,
-                        focusedContainerColor = Color(0xFFF9FAFB),
-                        unfocusedContainerColor = Color(0xFFF9FAFB)
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
                     )
                 )
 

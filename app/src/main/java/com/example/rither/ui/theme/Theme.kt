@@ -20,7 +20,8 @@ val LightColorScheme = lightColorScheme(
     background = SkylineBackground,
     surface = SkylineSecondary,
     onBackground = SkylineOnBackground,
-    onSurface = SkylineOnSurface
+    onSurface = SkylineOnSurface,
+    surfaceVariant = SkylineSurfaceVariant
 )
 
 
@@ -33,7 +34,8 @@ private val DarkColorScheme = darkColorScheme(
     background = MidnightBackground,
     surface = MidnightSurface,
     onBackground = MidnightOnBackground,
-    onSurface = MidnightOnSurface
+    onSurface = MidnightOnSurface,
+    surfaceVariant = MidnightSurfaceVariant
 )
 
 

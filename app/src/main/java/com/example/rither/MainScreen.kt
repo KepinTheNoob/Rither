@@ -3,6 +3,10 @@ package com.example.rither
 import android.app.Activity
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -20,11 +24,14 @@ import com.example.rither.screen.profile.ProfileScreen
 import com.example.rither.screen.rideDetails.RideDetailScreen
 import com.example.rither.screen.signup.SignupScreen
 import com.example.rither.screen.verifyEmail.VerifyEmailScreen
+import com.example.rither.ui.theme.RitherTheme
 
 @Composable
 fun MainContent(
     navController: NavHostController,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isDarkTheme: Boolean,
+    onThemeChange: (Boolean) -> Unit
 ) {
     NavHost(
         navController = navController,
@@ -74,7 +81,9 @@ fun MainContent(
         }
         composable(Screen.Setting.name) {
             SettingsScreen(
-                navController = navController
+                navController = navController,
+                isDarkTheme = isDarkTheme,
+                onThemeChange = onThemeChange
             )
         }
     }
@@ -88,10 +97,15 @@ fun MainScreen(
     intent: MainActivity,
 ) {
     val navController = rememberNavController()
-//    val auth = FirebaseAuth.getInstance()
+    var isDarkTheme by remember { mutableStateOf(false) }
     val intent = intent
 
-    MainContent(
-        navController = navController,
-    )
+    RitherTheme(darkTheme = isDarkTheme) {
+        MainContent(
+            navController = navController,
+            // 3. PASS THE STATE AND THE FUNCTION TO CHANGE IT DOWN.
+            isDarkTheme = isDarkTheme,
+            onThemeChange = { isDarkTheme = it }
+        )
+    }
 }

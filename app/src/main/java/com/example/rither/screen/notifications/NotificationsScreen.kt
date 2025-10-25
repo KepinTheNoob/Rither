@@ -43,7 +43,7 @@ val sampleNotifications = listOf(
 fun NotificationsScreen(notifications: List<NotificationItem>, navController: NavController) {
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = Color(0xFFF9F9F9) // A light grey background similar to the image
+        color = MaterialTheme.colorScheme.background
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -89,7 +89,7 @@ fun NotificationCard(notification: NotificationItem) {
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface // Usually white
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -99,7 +99,6 @@ fun NotificationCard(notification: NotificationItem) {
                 .padding(16.dp),
             verticalAlignment = Alignment.Top
         ) {
-            // Icon
             Box(
                 modifier = Modifier
                     .size(24.dp)

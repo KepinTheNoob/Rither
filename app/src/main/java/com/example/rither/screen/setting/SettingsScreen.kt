@@ -20,8 +20,10 @@ import androidx.navigation.compose.rememberNavController // Dummy biar navContro
 import com.example.rither.ui.theme.RitherTheme
 
 @Composable
-fun SettingsScreen(navController: NavController) {
-    var isDarkTheme by remember { mutableStateOf(false) }
+fun SettingsScreen(
+    navController: NavController,
+    isDarkTheme: Boolean,
+    onThemeChange: (Boolean) -> Unit) {
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -42,7 +44,7 @@ fun SettingsScreen(navController: NavController) {
 
             ThemeSettingCard(
                 isDarkTheme = isDarkTheme,
-                onThemeChange = { isDarkTheme = it }
+                onThemeChange = onThemeChange
             )
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -178,24 +180,24 @@ fun ThemeToggleButton(isDarkTheme: Boolean, onToggle: () -> Unit) {
     }
 }
 
-@Preview(showBackground = true, name = "Light Mode")
-@Composable
-fun SettingsScreenLightPreview() {
-    RitherTheme(darkTheme = false) {
-        // Buat NavController dummy untuk kebutuhan preview
-        val dummyNavController = rememberNavController()
-        SettingsScreen(navController = dummyNavController)
-//        SettingsScreen(navController: NavController) // -> Ini yang lawas
-    }
-}
-
-@Preview(showBackground = true, name = "Dark Mode")
-@Composable
-fun SettingsScreenDarkPreview() {
-    RitherTheme(darkTheme = true) {
-        // Buat NavController palsu (dummy) juga di sini
-        val dummyNavController = rememberNavController()
-        SettingsScreen(navController = dummyNavController)
-//        SettingsScreen() // -> Ini yang lawas
-    }
-}
+//@Preview(showBackground = true, name = "Light Mode")
+//@Composable
+//fun SettingsScreenLightPreview() {
+//    RitherTheme(darkTheme = false) {
+//        // Buat NavController dummy untuk kebutuhan preview
+//        val dummyNavController = rememberNavController()
+//        SettingsScreen(navController = dummyNavController)
+////        SettingsScreen(navController: NavController) // -> Ini yang lawas
+//    }
+//}
+//
+//@Preview(showBackground = true, name = "Dark Mode")
+//@Composable
+//fun SettingsScreenDarkPreview() {
+//    RitherTheme(darkTheme = true) {
+//        // Buat NavController palsu (dummy) juga di sini
+//        val dummyNavController = rememberNavController()
+//        SettingsScreen(navController = dummyNavController)
+////        SettingsScreen() // -> Ini yang lawas
+//    }
+//}

@@ -21,7 +21,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
@@ -108,35 +107,6 @@ fun HomeScreen(
                     2 -> MyTripsSection()
                 }
             }
-//            item {
-//                RideInfoCard(
-//                    driverInitial = "A",
-//                    driverName = "Amira",
-//                    rating = 4.8f,
-//                    origin = "Kemang",
-//                    destination = "Senayan",
-//                    carModel = "Toyota Yaris",
-//                    rideTime = "Today, 5:30 PM",
-//                    price = "$4.50",
-//                    seatsAvailable = 2,
-//                    initialBackgroundColor = Color(0xFFE0E0E0)
-//                )
-//                Spacer(modifier = Modifier.height(16.dp))
-//            }
-//            item {
-//                RideInfoCard(
-//                    driverInitial = "R",
-//                    driverName = "Rizky",
-//                    rating = 4.7f,
-//                    origin = "BSD",
-//                    destination = "Kuningan",
-//                    carModel = "Honda Jazz",
-//                    rideTime = "Today, 6:15 PM",
-//                    price = "$5.80",
-//                    seatsAvailable = 1,
-//                    initialBackgroundColor = Color(0xFFD1C4E9)
-//                )
-//            }
         }
     }
 }
