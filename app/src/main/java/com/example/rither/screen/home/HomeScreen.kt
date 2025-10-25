@@ -176,7 +176,7 @@ fun TopBarSection(
             )
         }
         Spacer(modifier = Modifier.weight(1f))
-        IconButton(onClick = { /*TODO*/ }) {
+        IconButton(onClick = { navController.navigate(Screen.Notifications.name) }) {
             Icon(
                 imageVector = Icons.Default.Notifications,
                 contentDescription = "Notifications",
