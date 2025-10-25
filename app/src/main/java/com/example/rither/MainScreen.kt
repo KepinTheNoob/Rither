@@ -13,6 +13,7 @@ import com.example.rither.data.Screen
 import com.example.rither.screen.home.HomeScreen
 import com.example.rither.screen.login.LoginScreen
 import com.example.rither.screen.notifications.NotificationsScreen
+import com.example.rither.screen.setting.SettingsScreen
 import com.example.rither.screen.notifications.sampleNotifications
 import com.example.rither.screen.offerRide.OfferRideScreen
 import com.example.rither.screen.profile.ProfileScreen
@@ -68,6 +69,11 @@ fun MainContent(
         composable(Screen.Notifications.name) {
             NotificationsScreen(
                 notifications = sampleNotifications,
+                navController = navController
+            )
+        }
+        composable(Screen.Setting.name) {
+            SettingsScreen(
                 navController = navController
             )
         }

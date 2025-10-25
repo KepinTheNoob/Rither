@@ -15,9 +15,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController // Dummy biar navController bisa keterima
 import com.example.rither.ui.theme.RitherTheme
+
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(navController: NavController) {
     var isDarkTheme by remember { mutableStateOf(false) }
 
     Surface(
@@ -179,7 +182,10 @@ fun ThemeToggleButton(isDarkTheme: Boolean, onToggle: () -> Unit) {
 @Composable
 fun SettingsScreenLightPreview() {
     RitherTheme(darkTheme = false) {
-        SettingsScreen()
+        // Buat NavController dummy untuk kebutuhan preview
+        val dummyNavController = rememberNavController()
+        SettingsScreen(navController = dummyNavController)
+//        SettingsScreen(navController: NavController) // -> Ini yang lawas
     }
 }
 
@@ -187,6 +193,9 @@ fun SettingsScreenLightPreview() {
 @Composable
 fun SettingsScreenDarkPreview() {
     RitherTheme(darkTheme = true) {
-        SettingsScreen()
+        // Buat NavController palsu (dummy) juga di sini
+        val dummyNavController = rememberNavController()
+        SettingsScreen(navController = dummyNavController)
+//        SettingsScreen() // -> Ini yang lawas
     }
 }
