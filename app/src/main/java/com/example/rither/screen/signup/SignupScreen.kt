@@ -8,8 +8,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Check
@@ -21,7 +23,6 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,74 +33,119 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.rither.R
 import com.example.rither.data.Screen
-import com.example.rither.ui.theme.RitherTheme
 import com.example.rither.ui.theme.SkylineOnSurface
 import com.example.rither.ui.theme.SkylinePrimary
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import android.net.Uri.encode as uriEncode
 
 @Composable
 fun SignupScreen(
-    signupViewModel: SignupViewModel = SignupViewModel(),
-    navController: NavController
+    signupViewModel: SignupViewModel = viewModel(),
+    navController: NavController,
+    name: String = "",
+    studentId: String = "",
+    binusianId: String = "",
+    university: String = ""
 ) {
-    var showPassword by remember { mutableStateOf(value = false) }
+    val context = LocalContext.current
+    val scrollState = rememberScrollState()
+
+    // --- editable fields (user input) ---
     var email by remember { mutableStateOf("") }
-    var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var showPassword by remember { mutableStateOf(false) }
+
+    // --- errors ---
     var emailError by remember { mutableStateOf("") }
     var passwordError by remember { mutableStateOf("") }
-    var nameError by remember { mutableStateOf("") }
-    var phoneError by remember { mutableStateOf("") }
     var confirmPasswordError by remember { mutableStateOf("") }
-    var imageUri by remember { mutableStateOf<Uri?>(null) } // State for the selected image URI
+    var phoneError by remember { mutableStateOf("") }
 
-    val authState = signupViewModel.authState.observeAsState()
-    val context = LocalContext.current
-
-    // Image picker launcher
+    // --- profile image (optional) ---
+    var imageUri by remember { mutableStateOf<Uri?>(null) }
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        imageUri = uri
-    }
+    ) { uri: Uri? -> imageUri = uri }
+
+    val authState = signupViewModel.authState.observeAsState()
+//    LaunchedEffect(authState.value) {
+//        when (val s = authState.value) {
+//            is AuthState.Authenticated -> {
+//                // Already authenticated — go to verify (or main) as you prefer
+//                navController.navigate(Screen.VerifyEmail.name) {
+//                    popUpTo(Screen.Signup.name) { inclusive = true }
+//                }
+//            }
+//            is AuthState.Info -> {
+//                val message = s.message
+//                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+//
+//                val uid = FirebaseAuth.getInstance().currentUser?.uid
+//                if (!uid.isNullOrBlank()) {
+//                    navController.navigate(Screen.VerifyEmail.name) {
+//                        popUpTo(Screen.Signup.name) { inclusive = true }
+//                    }
+//                } else {
+//                    // fallback navigation
+//                    navController.navigate(Screen.VerifyEmail.name) {
+//                        popUpTo(Screen.Signup.name) { inclusive = true }
+//                    }
+//                }
+//            }
+//            is AuthState.Error -> {
+//                val message = s.message
+//                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+//            }
+//            else -> Unit
+//        }
+//    }
 
     LaunchedEffect(authState.value) {
-        when(authState.value) {
-            is AuthState.Authenticated -> navController.navigate(Screen.VerifyEmail.name) {
-                popUpTo(Screen.Signup.name) { inclusive = true }
-            }
-
-            is AuthState.Info -> {
-                val message = (authState.value as AuthState.Info).message
-                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-
+        when (val state = authState.value) {
+            is AuthState.Authenticated -> {
+                // The user is already authenticated and verified
                 navController.navigate(Screen.VerifyEmail.name) {
                     popUpTo(Screen.Signup.name) { inclusive = true }
                 }
             }
 
+            is AuthState.Info -> {
+                // Informational message (e.g. verification email sent)
+                Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
+
+                // If the user has been created but not verified yet, go to verify screen
+                val uid = FirebaseAuth.getInstance().currentUser?.uid
+                if (!uid.isNullOrBlank()) {
+                    navController.navigate(Screen.Home.name) {
+                        popUpTo(Screen.Signup.name) { inclusive = true }
+                    }
+                }
+            }
+
             is AuthState.Error -> {
-                val message = (authState.value as AuthState.Error).message
-                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                // Show error message only, no navigation
+                Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
             }
 
             else -> Unit
         }
     }
 
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        // Use a Box to center the card on the screen
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -107,16 +153,13 @@ fun SignupScreen(
             contentAlignment = Alignment.Center
         ) {
             ElevatedCard(
-                elevation = CardDefaults.cardElevation(
-                    defaultElevation = 8.dp
-                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                ),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(
                     modifier = Modifier
+                        .verticalScroll(scrollState)
                         .padding(all = 24.dp)
                         .background(color = MaterialTheme.colorScheme.surface),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -134,7 +177,6 @@ fun SignupScreen(
                     )
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // --- Profile Picture Selector ---
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
@@ -155,103 +197,41 @@ fun SignupScreen(
                             Text("Add Photo", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
+
                     Spacer(modifier = Modifier.height(24.dp))
-                    // --- End of Profile Picture Selector ---
 
                     Column(horizontalAlignment = Alignment.Start) {
+                        // --- Read-only OCR fields ---
                         OutlinedTextField(
                             value = name,
-                            onValueChange = {
-                                name = it
-                                nameError = ""
-                            },
-                            label = { Text("Full Name") },
+                            onValueChange = { /* no-op */ },
+                            label = { Text("Full Name (from card)") },
                             modifier = Modifier.fillMaxWidth(),
                             leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Person,
-                                    contentDescription = "Person Icon"
-                                )
+                                Icon(imageVector = Icons.Default.Person, contentDescription = "Person Icon")
                             },
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Text
-                            ),
                             singleLine = true,
-                            shape = MaterialTheme.shapes.medium,
+                            enabled = false,
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = SkylinePrimary,
                                 unfocusedBorderColor = SkylineOnSurface.copy(alpha = 0.2f),
                                 focusedLabelColor = SkylinePrimary,
                                 unfocusedLabelColor = SkylineOnSurface.copy(alpha = 0.6f),
                                 cursorColor = SkylinePrimary,
-                                focusedContainerColor = Color(0xFFF9FAFB),
+                                focusedContainerColor = Color(  0xFFF9FAFB),
                                 unfocusedContainerColor = Color(0xFFF9FAFB)
-                            ),
-                            isError = nameError.isNotEmpty(),
-                            supportingText = {
-                                if (nameError.isNotEmpty()) {
-                                    Text(nameError, color = MaterialTheme.colorScheme.error)
-                                }
-                            },
+                            )
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
 
                         OutlinedTextField(
-                            value = email,
-                            onValueChange = {
-                                email = it
-                                emailError = ""
-                            },
-                            label = {
-                                Text( "Email" )
-                            },
-                            placeholder = { Text("example@binus.ac.id") },
+                            value = studentId,
+                            onValueChange = { /* no-op */ },
+                            label = { Text("Student ID") },
                             modifier = Modifier.fillMaxWidth(),
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Email,
-                                    contentDescription = "Email Icon"
-                                )
-                            },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                             singleLine = true,
-                            shape = MaterialTheme.shapes.medium,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = SkylinePrimary,
-                                unfocusedBorderColor = SkylineOnSurface.copy(alpha = 0.2f),
-                                focusedLabelColor = SkylinePrimary,
-                                unfocusedLabelColor = SkylineOnSurface.copy(alpha = 0.6f),
-                                cursorColor = SkylinePrimary,
-                                focusedContainerColor = Color(0xFFF9FAFB),
-                                unfocusedContainerColor = Color(0xFFF9FAFB)
-                            ),
-                            isError = emailError.isNotEmpty(),
-                            supportingText = {
-                                if (emailError.isNotEmpty()) {
-                                    Text(emailError, color = MaterialTheme.colorScheme.error)
-                                }
-                            },
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        OutlinedTextField(
-                            value = phone,
-                            onValueChange = { phone = it },
-                            label = { Text("Phone") },
-                            modifier = Modifier.fillMaxWidth(),
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Call,
-                                    contentDescription = "Call Icon"
-                                )
-                            },
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Phone
-                            ),
-                            singleLine = true,
-                            shape = MaterialTheme.shapes.medium,
+                            enabled = false,
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = SkylinePrimary,
                                 unfocusedBorderColor = SkylineOnSurface.copy(alpha = 0.2f),
@@ -262,6 +242,117 @@ fun SignupScreen(
                                 unfocusedContainerColor = Color(0xFFF9FAFB)
                             )
                         )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        OutlinedTextField(
+                            value = binusianId,
+                            onValueChange = { /* no-op */ },
+                            label = { Text("Binusian ID") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            enabled = false,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = SkylinePrimary,
+                                unfocusedBorderColor = SkylineOnSurface.copy(alpha = 0.2f),
+                                focusedLabelColor = SkylinePrimary,
+                                unfocusedLabelColor = SkylineOnSurface.copy(alpha = 0.6f),
+                                cursorColor = SkylinePrimary,
+                                focusedContainerColor = Color(0xFFF9FAFB),
+                                unfocusedContainerColor = Color(0xFFF9FAFB)
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        OutlinedTextField(
+                            value = university,
+                            onValueChange = { /* no-op */ },
+                            label = { Text("University") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            enabled = false,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = SkylinePrimary,
+                                unfocusedBorderColor = SkylineOnSurface.copy(alpha = 0.2f),
+                                focusedLabelColor = SkylinePrimary,
+                                unfocusedLabelColor = SkylineOnSurface.copy(alpha = 0.6f),
+                                cursorColor = SkylinePrimary,
+                                focusedContainerColor = Color(0xFFF9FAFB),
+                                unfocusedContainerColor = Color(0xFFF9FAFB)
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Button to open CameraScreen and run OCR
+                        Button(
+                            onClick = {
+                                navController.navigate(Screen.Camera.name)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Scan Student Card")
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // --- Editable fields ---
+                        OutlinedTextField(
+                            value = email,
+                            onValueChange = {
+                                email = it
+                                emailError = ""
+                            },
+                            label = { Text("Email") },
+                            placeholder = { Text("example@binus.ac.id") },
+                            modifier = Modifier.fillMaxWidth(),
+                            leadingIcon = { Icon(imageVector = Icons.Default.Email, contentDescription = "Email Icon") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                            singleLine = true,
+                            isError = emailError.isNotEmpty(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = SkylinePrimary,
+                                unfocusedBorderColor = SkylineOnSurface.copy(alpha = 0.2f),
+                                focusedLabelColor = SkylinePrimary,
+                                unfocusedLabelColor = SkylineOnSurface.copy(alpha = 0.6f),
+                                cursorColor = SkylinePrimary,
+                                focusedContainerColor = Color(0xFFF9FAFB),
+                                unfocusedContainerColor = Color(0xFFF9FAFB)
+                            ),
+                            supportingText = {
+                                if (emailError.isNotEmpty()) Text(emailError, color = MaterialTheme.colorScheme.error)
+                            }
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        OutlinedTextField(
+                            value = phone,
+                            onValueChange = {
+                                phone = it
+                                phoneError = ""
+                            },
+                            label = { Text("Phone") },
+                            modifier = Modifier.fillMaxWidth(),
+                            leadingIcon = { Icon(imageVector = Icons.Default.Call, contentDescription = "Phone Icon") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                            singleLine = true,
+                            isError = phoneError.isNotEmpty(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = SkylinePrimary,
+                                unfocusedBorderColor = SkylineOnSurface.copy(alpha = 0.2f),
+                                focusedLabelColor = SkylinePrimary,
+                                unfocusedLabelColor = SkylineOnSurface.copy(alpha = 0.6f),
+                                cursorColor = SkylinePrimary,
+                                focusedContainerColor = Color(0xFFF9FAFB),
+                                unfocusedContainerColor = Color(0xFFF9FAFB)
+                            ),
+                            supportingText = {
+                                if (phoneError.isNotEmpty()) Text(phoneError, color = MaterialTheme.colorScheme.error)
+                            }
+                        )
+
                         Spacer(modifier = Modifier.height(8.dp))
 
                         OutlinedTextField(
@@ -270,42 +361,18 @@ fun SignupScreen(
                                 password = it
                                 passwordError = ""
                             },
-                            label = {
-                                Text("Password")
-                            },
+                            label = { Text("Password") },
                             modifier = Modifier.fillMaxWidth(),
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Lock,
-                                    contentDescription = "Password Icon"
-                                )
-                            },
-                            visualTransformation = if (showPassword) {
-                                VisualTransformation.None
-                            } else {
-                                PasswordVisualTransformation()
-                            },
+                            leadingIcon = { Icon(imageVector = Icons.Default.Lock, contentDescription = "Password Icon") },
+                            visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                             singleLine = true,
                             trailingIcon = {
-                                if (showPassword) {
-                                    IconButton(onClick = { showPassword = false }) {
-                                        Icon(
-                                            imageVector = Icons.Filled.Visibility,
-                                            contentDescription = "hide_password"
-                                        )
-                                    }
-                                } else {
-                                    IconButton(
-                                        onClick = { showPassword = true }) {
-                                        Icon(
-                                            imageVector = Icons.Filled.VisibilityOff,
-                                            contentDescription = "hide_password"
-                                        )
-                                    }
+                                IconButton(onClick = { showPassword = !showPassword }) {
+                                    Icon(imageVector = if (showPassword) Icons.Filled.Visibility else Icons.Filled.VisibilityOff, contentDescription = "Toggle password")
                                 }
                             },
-                            shape = MaterialTheme.shapes.medium,
+                            isError = passwordError.isNotEmpty(),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = SkylinePrimary,
                                 unfocusedBorderColor = SkylineOnSurface.copy(alpha = 0.2f),
@@ -315,12 +382,9 @@ fun SignupScreen(
                                 focusedContainerColor = Color(0xFFF9FAFB),
                                 unfocusedContainerColor = Color(0xFFF9FAFB)
                             ),
-                            isError = passwordError.isNotEmpty(),
                             supportingText = {
-                                if (passwordError.isNotEmpty()) {
-                                    Text(passwordError, color = MaterialTheme.colorScheme.error)
-                                }
-                            },
+                                if (passwordError.isNotEmpty()) Text(passwordError, color = MaterialTheme.colorScheme.error)
+                            }
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -329,44 +393,15 @@ fun SignupScreen(
                             value = confirmPassword,
                             onValueChange = {
                                 confirmPassword = it
-                                passwordError = ""
+                                confirmPasswordError = ""
                             },
                             label = { Text("Confirm Password") },
                             modifier = Modifier.fillMaxWidth(),
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = "Confirm Password Icon"
-                                )
-                            },
-                            visualTransformation = if (showPassword) {
-                                VisualTransformation.None
-                            } else {
-                                PasswordVisualTransformation()
-                            },
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Password
-                            ),
+                            leadingIcon = { Icon(imageVector = Icons.Default.Check, contentDescription = "Confirm Icon") },
+                            visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                             singleLine = true,
-                            shape = MaterialTheme.shapes.medium,
-                            trailingIcon = {
-                                if (showPassword) {
-                                    IconButton(onClick = { showPassword = false }) {
-                                        Icon(
-                                            imageVector = Icons.Filled.Visibility,
-                                            contentDescription = "hide_password"
-                                        )
-                                    }
-                                } else {
-                                    IconButton(
-                                        onClick = { showPassword = true }) {
-                                        Icon(
-                                            imageVector = Icons.Filled.VisibilityOff,
-                                            contentDescription = "hide_password"
-                                        )
-                                    }
-                                }
-                            },
+                            isError = confirmPasswordError.isNotEmpty(),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = SkylinePrimary,
                                 unfocusedBorderColor = SkylineOnSurface.copy(alpha = 0.2f),
@@ -376,12 +411,9 @@ fun SignupScreen(
                                 focusedContainerColor = Color(0xFFF9FAFB),
                                 unfocusedContainerColor = Color(0xFFF9FAFB)
                             ),
-                            isError = confirmPasswordError.isNotEmpty(),
                             supportingText = {
-                                if (confirmPasswordError.isNotEmpty()) {
-                                    Text(confirmPasswordError, color = MaterialTheme.colorScheme.error)
-                                }
-                            },
+                                if (confirmPasswordError.isNotEmpty()) Text(confirmPasswordError, color = MaterialTheme.colorScheme.error)
+                            }
                         )
                     }
 
@@ -389,40 +421,27 @@ fun SignupScreen(
 
                     Button(
                         onClick = {
-                            emailError =
-                                if(email.isBlank()) "Email is required!"
-                                else if(!email.contains("@")) "Email must contain '@'!"
-                                else ""
-                            passwordError =
-                                if(password.isBlank()) "Password is required!"
-                                else if(password.length < 8) "Password must have at least 8 characters!"
-                                else ""
-                            nameError =
-                                if(name.isBlank()) "Name is required!"
-                                else ""
-                            phoneError =
-                                if(phone.isBlank()) "Phone number is required!"
-                                else if(phone.length < 7) "Phone number must have at least 8 characters!"
-                                else ""
-                            confirmPasswordError =
-                                if(confirmPassword.isBlank()) "Confirm is required!"
-                                else if(confirmPassword != password) "Must be same with password!"
-                                else ""
-                            if(
-                                emailError.isEmpty() && passwordError.isEmpty() &&
-                                nameError.isEmpty() &&
-                                phoneError.isEmpty() &&
-                                confirmPasswordError.isEmpty()
-                            ) {
+                            emailError = if (email.isBlank()) "Email is required!" else if (!email.contains("@")) "Email must contain '@'!" else ""
+                            phoneError = if (phone.isBlank()) "Phone number is required!" else if (phone.length < 7) "Phone must have at least 7 digits!" else ""
+                            passwordError = if (password.isBlank()) "Password is required!" else if (password.length < 8) "Password must have at least 8 characters!" else ""
+                            confirmPasswordError = if (confirmPassword.isBlank()) "Confirm is required!" else if (confirmPassword != password) "Must match password!" else ""
+
+                            if (emailError.isEmpty() && phoneError.isEmpty() && passwordError.isEmpty() && confirmPasswordError.isEmpty()) {
                                 if (email.endsWith("@binus.ac.id", ignoreCase = true)) {
+                                    // Use the OCR name when available; fallback to empty string (VM will error if empty)
+                                    val nameToSave = if (name.isNotBlank()) name else ""
+
                                     signupViewModel.signup(
                                         email = email,
-                                        password = password,
-                                        name = name,
                                         phone = phone,
-                                        imageUri = imageUri,
-                                        context = context
+                                        password = password,
+                                        name = nameToSave,
+                                        studentId,
+                                        binusianId,
+                                        imageUri,
+                                        context
                                     )
+                                    // The LaunchedEffect listening to authState will handle Firestore extra fields & navigation
                                 } else {
                                     emailError = "Email must end with @binus.ac.id"
                                 }
@@ -431,16 +450,11 @@ fun SignupScreen(
                         modifier = Modifier.fillMaxWidth(),
                         contentPadding = PaddingValues(vertical = 14.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                "Create Account",
-                                fontSize = 16.sp
-                            )
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                            Text("Create Account", fontSize = 16.sp)
                         }
                     }
+
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Row(
@@ -448,10 +462,7 @@ fun SignupScreen(
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "Already have an account?",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Text(text = "Already have an account?", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         TextButton(onClick = { navController.navigate(Screen.Login.name) }) {
                             Text("Log in")
                         }

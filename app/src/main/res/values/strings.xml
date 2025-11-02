@@ -10,4 +10,11 @@
     <string name="settings" />
     <string name="verifyEmail" />
     <string name="notifications" />
+    <string name="camera" />
+    <string name="rideBooking" />
+    <string name="rideSelection" />
+    <string name="driverOnboarding" />
+    <string name="driverFlow" />
+    <string name="driverSubmit" />
+    <string name="driverPending" />
 </resources>

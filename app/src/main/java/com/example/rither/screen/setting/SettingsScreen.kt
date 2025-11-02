@@ -17,7 +17,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController // Dummy biar navController bisa keterima
+import com.example.rither.data.Screen
 import com.example.rither.ui.theme.RitherTheme
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun SettingsScreen(
@@ -49,9 +51,46 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             PrivacyPolicyCard()
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SignOutCard(navController)
         }
     }
 }
+
+@Composable
+fun SignOutCard(navController: NavController) {
+    OutlinedCard(
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                FirebaseAuth.getInstance().signOut()
+
+                navController.navigate(Screen.Login.name) {
+                    popUpTo(0)
+                }
+            }
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            Text(
+                text = "Sign Out",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.error
+            )
+            Text(
+                text = "Log out of your account",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
 
 @Composable
 fun ThemeSettingCard(isDarkTheme: Boolean, onThemeChange: (Boolean) -> Unit) {

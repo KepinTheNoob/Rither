@@ -54,15 +54,19 @@ fun LoginScreen(
     val authState = loginViewModel.authState.observeAsState()
     val context = LocalContext.current
 
+
+
     LaunchedEffect(Unit) {
         val user = FirebaseAuth.getInstance().currentUser
         if (user != null) {
             try {
                 user.reload().await()
                 if (!user.isEmailVerified) {
-                    FirebaseAuth.getInstance().signOut()
+                    navController.navigate(Screen.Camera.name) {
+                        popUpTo(Screen.Login.name) { inclusive = true }
+                    }
                 } else {
-                    navController.navigate(Screen.Signup.name) {
+                    navController.navigate(Screen.Home.name) {
                         popUpTo(Screen.Login.name) { inclusive = true }
                     }
                 }

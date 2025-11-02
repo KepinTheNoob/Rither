@@ -13,7 +13,12 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.rither.data.Screen
+import com.example.rither.screen.driver.DriverFlowScreen
+import com.example.rither.screen.driver.DriverOnboardingScreen
+import com.example.rither.screen.driver.DriverPendingScreen
+import com.example.rither.screen.driver.DriverSubmitScreen
 import com.example.rither.screen.home.HomeScreen
 import com.example.rither.screen.login.LoginScreen
 import com.example.rither.screen.notifications.NotificationsScreen
@@ -21,8 +26,11 @@ import com.example.rither.screen.setting.SettingsScreen
 import com.example.rither.screen.notifications.sampleNotifications
 import com.example.rither.screen.offerRide.OfferRideScreen
 import com.example.rither.screen.profile.ProfileScreen
+import com.example.rither.screen.rideBooking.RideBookingScreen
 import com.example.rither.screen.rideDetails.RideDetailScreen
+import com.example.rither.screen.rideSelection.RideSelectionScreen
 import com.example.rither.screen.signup.SignupScreen
+import com.example.rither.screen.studentVerification.CameraScreen
 import com.example.rither.screen.verifyEmail.VerifyEmailScreen
 import com.example.rither.ui.theme.RitherTheme
 
@@ -43,11 +51,30 @@ fun MainContent(
                 navController = navController,
             )
         }
-        composable(Screen.Signup.name) {
+        composable(
+            route = Screen.Signup.name +
+                    "?name={name}&studentId={studentId}&binusianId={binusianId}&university={university}",
+            arguments = listOf(
+                navArgument("name") { defaultValue = "" },
+                navArgument("studentId") { defaultValue = "" },
+                navArgument("binusianId") { defaultValue = "" },
+                navArgument("university") { defaultValue = "" }
+            )
+        ) { backStackEntry ->
+            val name = backStackEntry.arguments?.getString("name") ?: ""
+            val studentId = backStackEntry.arguments?.getString("studentId") ?: ""
+            val binusianId = backStackEntry.arguments?.getString("binusianId") ?: ""
+            val university = backStackEntry.arguments?.getString("university") ?: ""
+
             SignupScreen(
                 navController = navController,
+                name = name,
+                studentId = studentId,
+                binusianId = binusianId,
+                university = university
             )
         }
+
         composable(Screen.Home.name) {
             HomeScreen(
                 navController = navController
@@ -84,6 +111,39 @@ fun MainContent(
                 navController = navController,
                 isDarkTheme = isDarkTheme,
                 onThemeChange = onThemeChange
+            )
+        }
+        composable(Screen.Camera.name) {
+            CameraScreen(
+                navController = navController
+            )
+        }
+        composable(Screen.RideBooking.name) {
+            RideBookingScreen(
+            )
+        }
+        composable(Screen.RideSelection.name) {
+            RideSelectionScreen(
+            )
+        }
+        composable(Screen.DriverOnboarding.name) {
+            DriverOnboardingScreen(
+                navController = navController
+            )
+        }
+        composable(Screen.DriverFlow.name) {
+            DriverFlowScreen(
+                navController = navController
+            )
+        }
+        composable(Screen.DriverSubmit.name) {
+            DriverSubmitScreen(
+                navController = navController
+            )
+        }
+        composable(Screen.DriverPending.name) {
+            DriverPendingScreen(
+                navController = navController
             )
         }
     }

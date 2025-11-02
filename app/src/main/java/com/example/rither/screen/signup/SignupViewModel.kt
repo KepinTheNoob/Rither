@@ -57,64 +57,15 @@ class SignupViewModel : ViewModel() {
         }
     }
 
-//    fun signup(email: String, name: String, phone: String, password: String) {
-//        if (email.isEmpty() || password.isEmpty() || name.isEmpty() || phone.isEmpty()) {
-//            _authState.value = AuthState.Error("All fields are required")
-//            return
-//        }
-//
-//        _authState.value = AuthState.Loading
-//
-//        auth.createUserWithEmailAndPassword(email, password)
-//            .addOnCompleteListener { task ->
-//                if (!task.isSuccessful) {
-//                    _authState.value = AuthState.Error(task.exception?.message ?: "Something went wrong")
-//                    return@addOnCompleteListener
-//                }
-//
-//                val user = auth.currentUser ?: run {
-//                    _authState.value = AuthState.Error("Failed to get current user")
-//                    return@addOnCompleteListener
-//                }
-//
-//                // Write user data to Firestore
-//                val db = FirebaseFirestore.getInstance()
-//                val userData = hashMapOf(
-//                    "email" to email,
-//                    "name" to name,
-//                    "phone" to phone,
-//                    "verified" to false
-//                )
-//
-//                db.collection("users")
-//                    .document(user.uid)
-//                    .set(userData)
-//                    .addOnSuccessListener {
-//                        user.sendEmailVerification()
-//                            .addOnSuccessListener {
-//                                _authState.value = AuthState.Info(
-//                                    "Signup successful! Verification email sent."
-//                                )
-//                            }
-//                            .addOnFailureListener { e ->
-//                                _authState.value = AuthState.Error(
-//                                    "User created but failed to send verification email: ${e.message}"
-//                                )
-//                            }
-//                    }
-//                    .addOnFailureListener { e ->
-//                        _authState.value = AuthState.Error("Failed to save user data: ${e.message}")
-//                    }
-//            }
-//    }
-
     fun signup(
         email: String,
-        name: String,
         phone: String,
         password: String,
+        name: String,
+        studentId: String,
+        binusianId: String,
         imageUri: Uri?,
-        context: Context
+        context: Context,
     ) {
         if (email.isEmpty() || password.isEmpty() || name.isEmpty() || phone.isEmpty()) {
             _authState.value = AuthState.Error("All fields are required")
@@ -125,40 +76,90 @@ class SignupViewModel : ViewModel() {
 
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    val user = auth.currentUser
-                    user?.sendEmailVerification()?.addOnSuccessListener {
-                        _emailVerificationMessage.value =
-                            "Verification email sent. Please check your inbox."
-
-                        // Add user to Firestore
-                        val userData = hashMapOf(
-                            "email" to email, "name" to name, "phone" to phone, "verified" to false
-                        )
-                        db.collection("users").document(user.uid).set(userData)
-                            .addOnSuccessListener {
-                                // If an image was selected, upload it
-                                if (imageUri != null) {
-                                    uploadProfileImageToCloudinary(imageUri, user.uid, context)
-                                }
-
-                                // Send verification email regardless of image upload status
-                                user.sendEmailVerification().addOnSuccessListener {
-                                    _authState.value = AuthState.Info("Account created. Verify your email to continue.")
-                                }.addOnFailureListener { e ->
-                                    _authState.value = AuthState.Error("User created, but failed to send verification email: ${e.message}")
-                                }
-                            }
-                            .addOnFailureListener { e ->
-                                _authState.value = AuthState.Error("Failed to save user data: ${e.message}")
-                            }
-                    }
-                } else {
-                    _authState.value =
-                        AuthState.Error(task.exception?.message ?: "Something went wrong")
+                if (!task.isSuccessful) {
+                    _authState.value = AuthState.Error(task.exception?.message ?: "Something went wrong")
+                    return@addOnCompleteListener
                 }
+
+                val user = auth.currentUser ?: run {
+                    _authState.value = AuthState.Error("Failed to get current user")
+                    return@addOnCompleteListener
+                }
+
+                // Write user data to Firestore
+                val db = FirebaseFirestore.getInstance()
+                val userData = hashMapOf(
+                    "email" to email,
+                    "name" to name,
+                    "phone" to phone,
+                    "studentId" to studentId,
+                    "binusianId" to binusianId,
+                    "verified" to true
+                )
+
+                db.collection("users")
+                    .document(user.uid)
+                    .set(userData)
+                    .addOnSuccessListener {
+                        _authState.value = AuthState.Authenticated(user)
+                    }
+                    .addOnFailureListener { e ->
+                        _authState.value = AuthState.Error("Failed to save user data: ${e.message}")
+                    }
             }
     }
+
+//    fun signup(
+//        email: String,
+//        name: String,
+//        phone: String,
+//        password: String,
+//        imageUri: Uri?,
+//        context: Context
+//    ) {
+//        if (email.isEmpty() || password.isEmpty() || name.isEmpty() || phone.isEmpty()) {
+//            _authState.value = AuthState.Error("All fields are required")
+//            return
+//        }
+//
+//        _authState.value = AuthState.Loading
+//
+//        auth.createUserWithEmailAndPassword(email, password)
+//            .addOnCompleteListener { task ->
+//                if (task.isSuccessful) {
+//                    val user = auth.currentUser
+//                    user?.sendEmailVerification()?.addOnSuccessListener {
+//                        _emailVerificationMessage.value =
+//                            "Verification email sent. Please check your inbox."
+//
+//                        // Add user to Firestore
+//                        val userData = hashMapOf(
+//                            "email" to email, "name" to name, "phone" to phone, "verified" to false
+//                        )
+//                        db.collection("users").document(user.uid).set(userData)
+//                            .addOnSuccessListener {
+//                                // If an image was selected, upload it
+//                                if (imageUri != null) {
+//                                    uploadProfileImageToCloudinary(imageUri, user.uid, context)
+//                                }
+//
+//                                // Send verification email regardless of image upload status
+//                                user.sendEmailVerification().addOnSuccessListener {
+//                                    _authState.value = AuthState.Info("Account created. Verify your email to continue.")
+//                                }.addOnFailureListener { e ->
+//                                    _authState.value = AuthState.Error("User created, but failed to send verification email: ${e.message}")
+//                                }
+//                            }
+//                            .addOnFailureListener { e ->
+//                                _authState.value = AuthState.Error("Failed to save user data: ${e.message}")
+//                            }
+//                    }
+//                } else {
+//                    _authState.value =
+//                        AuthState.Error(task.exception?.message ?: "Something went wrong")
+//                }
+//            }
+//    }
 
     private fun uploadProfileImageToCloudinary(uri: Uri, uid: String, context: Context) {
         viewModelScope.launch(Dispatchers.IO) {

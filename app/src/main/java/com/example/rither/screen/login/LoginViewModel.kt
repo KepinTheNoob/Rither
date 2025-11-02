@@ -38,25 +38,13 @@ class LoginViewModel : ViewModel() {
                 if (task.isSuccessful) {
                     val user = auth.currentUser
                     if (user != null) {
-                        if (user.isEmailVerified) {
-                            // Update Firestore verified field
-                            FirebaseFirestore.getInstance()
-                                .collection("users")
-                                .document(user.uid)
-                                .update("verified", true)
-
-                            _authState.value = AuthState.Authenticated(user)
-                        } else {
-                            auth.signOut()
-                            _authState.value = AuthState.Info("Please verify your email before logging in.")
-                        }
+                        _authState.value = AuthState.Authenticated(user)
                     } else {
                         _authState.value = AuthState.Error("User not found.")
                     }
                 } else {
-                    _authState.value = AuthState.Error(
-                        task.exception?.message ?: "Something went wrong"
-                    )
+                    _authState.value =
+                        AuthState.Error(task.exception?.message ?: "Invalid credentials")
                 }
             }
     }

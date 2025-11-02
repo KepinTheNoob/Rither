@@ -13,5 +13,12 @@ enum class Screen(@StringRes val title: Int) {
     RideDetails(title = R.string.rideDetails),
     Setting(title = R.string.settings),
     VerifyEmail(title = R.string.verifyEmail),
-    Notifications(title = R.string.notifications)
+    Notifications(title = R.string.notifications),
+    Camera(title = R.string.camera),
+    RideBooking(title = R.string.rideBooking),
+    RideSelection(title = R.string.rideSelection),
+    DriverOnboarding(title = R.string.driverOnboarding),
+    DriverFlow(title = R.string.driverFlow),
+    DriverSubmit(title = R.string.driverSubmit),
+    DriverPending(title = R.string.driverPending),
 }
