@@ -5,16 +5,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.example.rither.ui.theme.RitherTheme
+import com.google.android.libraries.places.api.Places
 import com.google.firebase.auth.FirebaseAuth
 import com.jakewharton.threetenabp.AndroidThreeTen
+import com.example.rither.BuildConfig
+import com.google.android.libraries.places.api.net.PlacesClient
 
 class MainActivity : ComponentActivity() {
-
-    public fun apiKey() {
-        
-        return
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         val auth : FirebaseAuth = FirebaseAuth.getInstance()
 
@@ -40,6 +37,10 @@ class MainActivity : ComponentActivity() {
         }
 
         super.onCreate(savedInstanceState)
+        if (!Places.isInitialized()) {
+            Places.initialize(applicationContext, BuildConfig.MAPS_API_KEY)
+//            PlacesClient placesClient = Places.createClient(this)
+        }
         AndroidThreeTen.init(this)
         enableEdgeToEdge()
         setContent {

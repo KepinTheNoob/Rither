@@ -107,8 +107,6 @@ fun BottomButtonPending(
     onClick: () -> Unit,
     text: String,
 ) {
-    // This column ensures the button respects safe area insets
-    // and adds padding.
     Column(
         modifier = Modifier
             .fillMaxWidth()

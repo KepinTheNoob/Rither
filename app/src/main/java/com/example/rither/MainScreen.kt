@@ -120,6 +120,7 @@ fun MainContent(
         }
         composable(Screen.RideBooking.name) {
             RideBookingScreen(
+                navController = navController
             )
         }
         composable(Screen.RideSelection.name) {

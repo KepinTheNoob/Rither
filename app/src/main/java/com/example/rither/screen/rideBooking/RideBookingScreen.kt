@@ -6,7 +6,10 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -24,18 +27,51 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
+import androidx.navigation.NavController
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.CameraPosition
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.MapProperties
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerState
-import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.libraries.places.api.Places
+import com.google.android.libraries.places.api.model.AutocompletePrediction
+import com.google.android.libraries.places.api.model.Place
+import com.google.android.libraries.places.api.net.FetchPlaceRequest
+import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
+import com.google.maps.android.compose.*
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun RideBookingScreen() {
+fun RideBookingScreen(navController: NavController) {
+    var pickupName by remember { mutableStateOf("") }
+    var dropoffName by remember { mutableStateOf("") }
+    var pickupLocation by remember { mutableStateOf<LatLng?>(null) }
+    var dropoffLocation by remember { mutableStateOf<LatLng?>(null) }
+    var currentLocation by remember { mutableStateOf<LatLng?>(null) }
+
+    val context = LocalContext.current
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+    val cameraPositionState = rememberCameraPositionState()
+
+    // --- Permission ---
+    val locationPermissionState = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION)
+
+    // --- Fetch current location ---
+    LaunchedEffect(locationPermissionState.status.isGranted) {
+        if (locationPermissionState.status.isGranted) {
+            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                location?.let {
+                    val latLng = LatLng(it.latitude, it.longitude)
+                    currentLocation = latLng
+                    cameraPositionState.position = CameraPosition.fromLatLngZoom(latLng, 15f)
+                }
+            }
+        } else {
+            locationPermissionState.launchPermissionRequest()
+        }
+    }
+
     Column(Modifier.fillMaxSize()) {
         // --- Map Area ---
         Box(
@@ -43,19 +79,34 @@ fun RideBookingScreen() {
                 .fillMaxWidth()
                 .weight(1f)
         ) {
-            // Dummy Map Placeholder
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.LightGray),
-                contentAlignment = Alignment.Center
-            ) {
-                OrderMap()
+            if (locationPermissionState.status.isGranted) {
+                GoogleMap(
+                    modifier = Modifier.fillMaxSize(),
+                    cameraPositionState = cameraPositionState,
+                    properties = MapProperties(isMyLocationEnabled = true)
+                ) {
+                    currentLocation?.let {
+                        Marker(state = MarkerState(it), title = "You are here")
+                    }
+                    pickupLocation?.let {
+                        Marker(state = MarkerState(it), title = "Pickup")
+                    }
+                    dropoffLocation?.let {
+                        Marker(state = MarkerState(it), title = "Drop-off")
+                    }
+                }
+            } else {
+                Box(
+                    modifier = Modifier.fillMaxSize().background(Color.LightGray),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Location permission required")
+                }
             }
 
             // Back Button
             IconButton(
-                onClick = { /* TODO: Handle back */ },
+                onClick = { navController.popBackStack() },
                 modifier = Modifier
                     .padding(16.dp)
                     .clip(CircleShape)
@@ -66,7 +117,11 @@ fun RideBookingScreen() {
 
             // My Location Button
             IconButton(
-                onClick = { /* TODO: Center map */ },
+                onClick = {
+                    currentLocation?.let {
+                        cameraPositionState.position = CameraPosition.fromLatLngZoom(it, 15f)
+                    }
+                },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(16.dp)
@@ -77,13 +132,33 @@ fun RideBookingScreen() {
             }
         }
 
-        // --- Booking Sheet Area ---
-        BookingSheet()
+        // --- Booking Sheet ---
+        BookingSheet(
+            pickupName = pickupName,
+            onPickupNameChange = { pickupName = it },
+            onPickupSelected = { name, latLng ->
+                pickupName = name
+                pickupLocation = latLng
+            },
+            dropoffName = dropoffName,
+            onDropoffNameChange = { dropoffName = it },
+            onDropoffSelected = { name, latLng ->
+                dropoffName = name
+                dropoffLocation = latLng
+            }
+        )
     }
 }
 
 @Composable
-fun BookingSheet() {
+fun BookingSheet(
+    pickupName: String,
+    onPickupNameChange: (String) -> Unit,
+    onPickupSelected: (String, LatLng) -> Unit,
+    dropoffName: String,
+    onDropoffNameChange: (String) -> Unit,
+    onDropoffSelected: (String, LatLng) -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -98,57 +173,38 @@ fun BookingSheet() {
         )
         Spacer(Modifier.height(24.dp))
 
-        // Route Info
         Row {
-            // Dotted line visualizer
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(top = 4.dp)
-            ) {
-                Icon(
-                    Icons.Default.Circle,
-                    contentDescription = "Pick up",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(12.dp)
-                )
-                // Dotted line
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(Icons.Default.Circle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 DottedDivider()
-                Icon(
-                    Icons.Default.LocationOn,
-                    contentDescription = "Drop off",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(14.dp)
-                )
+                Icon(Icons.Default.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             }
 
             Spacer(Modifier.width(16.dp))
 
-            // Location Text
             Column {
-                LocationRow(
-                    label = "Pick up",
-                    location = "BINUS Anggrek Campus Basement"
+                LocationSearchBar(
+                    label = "Pick-up location",
+                    query = pickupName,
+                    onQueryChange = onPickupNameChange,
+                    onPlaceSelected = onPickupSelected
                 )
                 Divider(modifier = Modifier.padding(vertical = 12.dp))
-                LocationRow(
-                    label = "Drop off",
-                    location = "House of Mysteries 60 No. 283A"
+                LocationSearchBar(
+                    label = "Drop-off location",
+                    query = dropoffName,
+                    onQueryChange = onDropoffNameChange,
+                    onPlaceSelected = onDropoffSelected
                 )
             }
         }
 
         Spacer(Modifier.height(24.dp))
-
-        // Next Button
         Button(
-            onClick = { /* TODO: Handle next */ },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp),
+            onClick = { /* Handle Next */ },
+            modifier = Modifier.fillMaxWidth().height(50.dp),
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.secondary
-            )
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
         ) {
             Text("Next", fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
@@ -156,114 +212,85 @@ fun BookingSheet() {
 }
 
 @Composable
-fun LocationRow(label: String, location: String) {
+fun LocationSearchBar(
+    label: String,
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onPlaceSelected: (String, LatLng) -> Unit
+) {
+    var predictions by remember { mutableStateOf<List<AutocompletePrediction>>(emptyList()) }
+
+    val context = LocalContext.current
+    val placesClient = remember { Places.createClient(context) }
+
+    // Track the current query and debounce it
+    LaunchedEffect(query) {
+        // Wait 500ms after the last keystroke before running
+        kotlinx.coroutines.delay(500)
+
+        if (query.length > 2) {
+            val request = FindAutocompletePredictionsRequest.builder()
+                .setQuery(query)
+                .build()
+
+            placesClient.findAutocompletePredictions(request)
+                .addOnSuccessListener { response ->
+                    predictions = response.autocompletePredictions
+                }
+                .addOnFailureListener {
+                    predictions = emptyList()
+                }
+        } else {
+            predictions = emptyList()
+        }
+    }
+
     Column {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.Gray
+        TextField(
+            value = query,
+            onValueChange = onQueryChange,
+            placeholder = { Text(label) },
+            modifier = Modifier.fillMaxWidth()
         )
-        Spacer(Modifier.height(4.dp))
-        Text(
-            text = location,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
+
+        LazyColumn {
+            items(predictions) { prediction ->
+                Text(
+                    text = prediction.getFullText(null).toString(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            val placeId = prediction.placeId
+                            val placeRequest = FetchPlaceRequest.builder(
+                                placeId,
+                                listOf(Place.Field.LAT_LNG, Place.Field.NAME)
+                            ).build()
+                            placesClient.fetchPlace(placeRequest)
+                                .addOnSuccessListener { result ->
+                                    result.place.latLng?.let { latLng ->
+                                        onPlaceSelected(result.place.name ?: "", latLng)
+                                        predictions = emptyList()
+                                    }
+                                }
+                        }
+                        .padding(8.dp)
+                )
+            }
+        }
     }
 }
 
 @Composable
 fun DottedDivider() {
-    // This is a simple implementation. For a true dotted line,
-    // you might need a custom draw modifier.
     Column(
-        modifier = Modifier
-            .height(30.dp)
-            .padding(vertical = 4.dp),
+        modifier = Modifier.height(30.dp).padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         repeat(5) {
             Box(
-                modifier = Modifier
-                    .size(2.dp)
-                    .background(Color.Gray, shape = CircleShape)
+                modifier = Modifier.size(2.dp).background(Color.Gray, shape = CircleShape)
             )
         }
     }
 }
-
-@Composable
-fun OrderMap() {
-    var hasLocationPermission by remember { mutableStateOf(false) }
-    val context = LocalContext.current
-    val fusedLocationClient = remember {
-        LocationServices.getFusedLocationProviderClient(context)
-    }
-
-    var userLocation by remember { mutableStateOf<LatLng?>(null) }
-    val cameraPositionState = rememberCameraPositionState()
-
-    // Request permission
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-        onResult = { isGranted ->
-            if (isGranted) {
-                fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                    location?.let {
-                        val latLng =
-                            LatLng(it.latitude, it.longitude)
-                        userLocation = latLng
-                        cameraPositionState.position = CameraPosition.fromLatLngZoom(latLng, 15f)
-                    }
-                }
-            } else {
-                Toast.makeText(context, "Location permission denied", Toast.LENGTH_SHORT).show()
-            }
-        }
-    )
-
-    // Ask permission when screen starts
-    LaunchedEffect(Unit) {
-        val fineLocationPermission = ContextCompat.checkSelfPermission(
-            context, Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
-
-        if (fineLocationPermission) {
-            hasLocationPermission = true
-            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                location?.let {
-                    val latLng = LatLng(it.latitude, it.longitude)
-                    userLocation = latLng
-                    cameraPositionState.position =
-                        CameraPosition.fromLatLngZoom(latLng, 15f)
-                }
-            }
-        } else {
-            permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-        }
-    }
-
-    // UI
-    Box(modifier = Modifier.fillMaxSize()) {
-        userLocation?.let { location ->
-            GoogleMap(
-                modifier = Modifier.fillMaxSize(),
-                cameraPositionState = cameraPositionState,
-                properties = MapProperties(isMyLocationEnabled = true)
-            ) {
-                Marker(
-                    state = MarkerState(position = location),
-                    title = "You are here"
-                )
-            }
-        } ?: Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
-        }
-    }
-}
-
