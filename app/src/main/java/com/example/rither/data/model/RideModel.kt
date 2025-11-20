@@ -5,11 +5,25 @@ import java.time.LocalTime
 
 data class Ride(
     val id: String = "",
-    val userId: String = "",
-    val from: String = "",
-    val to: String = "",
-    val date: LocalDate,
-    val time: LocalTime,
-    val people: Int = 1,
-    val price: Int = 1000
+    val driverId: String? = null,
+    val status: String = "pending",
+
+    val pickUpLat: Double = 0.0,
+    val pickUpLng: Double = 0.0,
+    val pickUpAddress: String = "",
+
+    val dropOffLat: Double = 0.0,
+    val dropOffLng: Double = 0.0,
+    val dropOffAddress: String = "",
+
+    val rideType: String = "",
+    val estimatedDuration: String = "",
+    val distanceMeters: Int = 0,
+    val price: Int = 0,
+
+    val passengerId: List<String> = emptyList(),
+    val currentPassengers: Int = 0,
+
+    val createdAt: Long = System.currentTimeMillis(),
+    val completedAt: Long? = null
 )

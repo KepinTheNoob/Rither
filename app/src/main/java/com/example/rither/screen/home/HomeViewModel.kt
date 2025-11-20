@@ -27,16 +27,30 @@ class HomeViewModel : ViewModel() {
     suspend fun getUserName(): String? {
         val userId = auth.currentUser?.uid ?: return null
 
+        println("DEBUG → FirebaseAuth UID = $userId")
+
         return try {
-            val name = db.collection("users")
+            val snap = db.collection("users")
                 .document(userId)
                 .get()
                 .await()
 
-            name.getString("name")
+            if (!snap.exists()) {
+                println("DEBUG → Firestore user doc not found for UID: $userId")
+                return null
+            }
+
+            val name = snap.getString("name")
+            println("DEBUG → Firestore name = $name")
+            name
         } catch (e: Exception) {
-            println("❌ Error fetching user name: ${e.message}")
+            println("❌ Error: ${e.message}")
             null
         }
+    }
+
+
+    suspend fun getHistory() {
+
     }
 }

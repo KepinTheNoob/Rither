@@ -50,31 +50,49 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var emailError by remember { mutableStateOf("") }
     var passwordError by remember { mutableStateOf("") }
+    var loginErrorMessage by remember { mutableStateOf<String?>(null) }
 
     val authState = loginViewModel.authState.observeAsState()
+    val isLoading = authState.value is AuthState.Loading
     val context = LocalContext.current
 
 
+//    LaunchedEffect(Unit) {
+//        val user = FirebaseAuth.getInstance().currentUser
+//        if (user != null) {
+//            try {
+//                user.reload().await()
+//                if (!user.isEmailVerified) {
+//                    navController.navigate(Screen.Camera.name) {
+//                        popUpTo(Screen.Login.name) { inclusive = true }
+//                    }
+//                } else {
+//                    navController.navigate(Screen.Home.name) {
+//                        popUpTo(Screen.Login.name) { inclusive = true }
+//                    }
+//                }
+//            } catch (e: Exception) {
+//                FirebaseAuth.getInstance().signOut()
+//            }
+//        }
+//    }
 
-    LaunchedEffect(Unit) {
-        val user = FirebaseAuth.getInstance().currentUser
-        if (user != null) {
-            try {
-                user.reload().await()
-                if (!user.isEmailVerified) {
-                    navController.navigate(Screen.Camera.name) {
-                        popUpTo(Screen.Login.name) { inclusive = true }
-                    }
-                } else {
-                    navController.navigate(Screen.Home.name) {
-                        popUpTo(Screen.Login.name) { inclusive = true }
-                    }
+    val state = authState.value
+    when (state) {
+        is AuthState.Error -> {
+            loginErrorMessage = state.message
+        }
+        is AuthState.Authenticated -> {
+            loginErrorMessage = null
+            LaunchedEffect(Unit) {
+                navController.navigate(Screen.Home.name) {
+                    popUpTo(Screen.Login.name) { inclusive = true }
                 }
-            } catch (e: Exception) {
-                FirebaseAuth.getInstance().signOut()
             }
         }
+        else -> {}
     }
+
 
     Surface(
         modifier = Modifier
@@ -216,6 +234,14 @@ fun LoginScreen(
                         },
                     )
 
+                    if (loginErrorMessage != null) {
+                        Text(
+                            text = loginErrorMessage!!,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+
 //                    Spacer(modifier = Modifier.height(8.dp))
 
                     TextButton(
@@ -229,17 +255,20 @@ fun LoginScreen(
 
                     Button(
                         onClick = {
-                            emailError = if(email.isBlank()) "Email is required!" else ""
-                            passwordError = if(password.isBlank()) "Password is required!" else ""
+                            if (!isLoading) {  // Prevent double clicks
+                                emailError = if(email.isBlank()) "Email is required!" else ""
+                                passwordError = if(password.isBlank()) "Password is required!" else ""
 
-                            if(emailError.isEmpty() && passwordError.isEmpty()) {
-                                if (email.endsWith("@binus.ac.id", ignoreCase = true)) {
-                                    loginViewModel.login(email.trim(), password)
-                                } else {
-                                    emailError = "Email must end with @binus.ac.id"
+                                if(emailError.isEmpty() && passwordError.isEmpty()) {
+                                    if (email.endsWith("@binus.ac.id", ignoreCase = true)) {
+                                        loginViewModel.login(email.trim(), password)
+                                    } else {
+                                        emailError = "Email must end with @binus.ac.id"
+                                    }
                                 }
                             }
                         },
+                        enabled = !isLoading,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp),
@@ -249,30 +278,23 @@ fun LoginScreen(
                             contentColor = Color.White
                         )
                     ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Login,
-                            contentDescription = "Login Icon",
-                            modifier = Modifier.padding(end = 6.dp)
-                        )
-                        Text("Log in", fontSize = 16.sp)
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                strokeWidth = 2.dp,
+                                modifier = Modifier.size(22.dp),
+                                color = Color.White
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Login,
+                                contentDescription = "Login Icon",
+                                modifier = Modifier.padding(end = 6.dp)
+                            )
+                            Text("Log in", fontSize = 16.sp)
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
-
-                    OutlinedButton(
-                        onClick = { /* TODO */ },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
-                        shape = MaterialTheme.shapes.medium,
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = Color.White
-                        )
-                    ) {
-                        Text("Login with Google", fontSize = 16.sp)
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),

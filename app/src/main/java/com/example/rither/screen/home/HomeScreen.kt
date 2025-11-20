@@ -3,6 +3,7 @@ package com.example.rither.screen.home
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -42,6 +43,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.lifecycle.ViewModel
 import androidx.navigation.NavController
 import com.example.rither.data.Screen
+import com.example.rither.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,8 +57,18 @@ fun HomeScreen(
         topBar = { HomeTopBar(navController) },
         bottomBar = {
             HomeBottomBar(
-                selectedItem = selectedBottomItem,
-                onItemSelected = { selectedBottomItem = it }
+                selectedItem = "Home",
+                onItemSelected = { itemName ->
+                    if (itemName == "Rides") {
+                        navController.navigate(Screen.Activity.name) {
+                            popUpTo(navController.graph.startDestinationId) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                }
             )
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -127,7 +139,7 @@ fun HomeScreenContent(
             ExploreCard(
                 title = "24/7 Support",
                 subtitle = "Get support anywhere, anytime",
-                // TODO: Replace with actual image
+                imageRes = R.drawable.support,
                 placeholderColor = Color.DarkGray,
                 onClick = {}
             )
@@ -137,7 +149,7 @@ fun HomeScreenContent(
             ExploreCard(
                 title = "Be a Driver!",
                 subtitle = "Sign up if you have a car or scooter",
-                // TODO: Replace with actual image
+                imageRes = R.drawable.driver,
                 placeholderColor = Color.Gray,
                 onClick = { navController.navigate(Screen.DriverOnboarding.name) }
             )
@@ -217,14 +229,14 @@ fun HomeTopBar(
 fun Greeting(
     homeViewModel: HomeViewModel
 ) {
-    var userName by remember { mutableStateOf<String?>(null)}
+    var name by remember { mutableStateOf<String?>(null)}
 
     LaunchedEffect(Unit) {
-        userName = homeViewModel.getUserName()
+        name = homeViewModel.getUserName()
     }
 
     Text(
-        text = if (userName != null) "Hi, $userName! 👋" else "Guest",
+        text = if (name != null) "Hi, $name! 👋" else "Guest",
         style = MaterialTheme.typography.headlineMedium,
         fontWeight = FontWeight.Bold
     )
@@ -353,7 +365,6 @@ fun RideActionCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Placeholder for image
             Icon(
                 imageVector = icon,
                 contentDescription = title,
@@ -387,6 +398,7 @@ fun RideActionCard(
 fun ExploreCard(
     title: String,
     subtitle: String,
+    @DrawableRes imageRes: Int,
     placeholderColor: Color,
     onClick: () -> Unit
 ) {
@@ -404,12 +416,12 @@ fun ExploreCard(
                     .fillMaxSize()
                     .background(placeholderColor)
             )
-            // Image(
-            //     painter = painterResource(id = R.drawable.your_image),
-            //     contentDescription = title,
-            //     contentScale = ContentScale.Crop,
-            //     modifier = Modifier.fillMaxSize()
-            // )
+             Image(
+                 painter = painterResource(id = imageRes),
+                 contentDescription = title,
+                 contentScale = ContentScale.Crop,
+                 modifier = Modifier.fillMaxSize()
+             )
 
             // Scrim
             Box(

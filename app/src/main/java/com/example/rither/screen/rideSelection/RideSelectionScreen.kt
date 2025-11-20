@@ -1,5 +1,6 @@
 package com.example.rither.screen.rideSelection
 
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -25,10 +26,67 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.Polyline
+import com.google.maps.android.compose.rememberCameraPositionState
 
 @Composable
-fun RideSelectionScreen() {
+fun RideSelectionScreen(
+    navController: NavController,
+    pickupName: String,
+    dropoffName: String,
+    pickupLatLng: LatLng,
+    dropoffLatLng: LatLng,
+    rideSelectionViewModel: RideSelectionViewModel = viewModel()
+) {
     var selectedRide by remember { mutableStateOf("Scooter") }
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(pickupLatLng, 13f)
+    }
+    var routePoints by remember { mutableStateOf<List<LatLng>>(emptyList()) }
+    var boundsToAnimate by remember { mutableStateOf<LatLngBounds?>(null) }
+
+    // Launch fetch once whenever pickup/dropoff changes.
+    LaunchedEffect(pickupLatLng, dropoffLatLng) {
+        // Use ViewModel's callback-style getRoutePoints (non-blocking)
+        rideSelectionViewModel.getRoutePoints(pickupLatLng, dropoffLatLng) { polyline ->
+            routePoints = polyline
+
+            // compute bounds for camera animation if we have points (fallback to include start/end)
+            val builder = LatLngBounds.builder()
+            builder.include(pickupLatLng)
+            builder.include(dropoffLatLng)
+            for (p in polyline) builder.include(p)
+            boundsToAnimate = try {
+                builder.build()
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
+    LaunchedEffect(boundsToAnimate) {
+        boundsToAnimate?.let { bounds ->
+            // animate camera to bounds (wrap in try-catch because camera update may throw if map not ready)
+            try {
+                cameraPositionState.animate(
+                    update = com.google.android.gms.maps.CameraUpdateFactory.newLatLngBounds(bounds, 150),
+                    durationMs = 1200
+                )
+            } catch (_: Exception) {
+                // ignore animation errors (map not ready, etc.)
+            }
+        }
+    }
 
     Column(Modifier.fillMaxSize()) {
         // --- Map Area ---
@@ -41,16 +99,44 @@ fun RideSelectionScreen() {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFFE0E0E0)), // Lighter gray
+                    .background(Color(0xFFE0E0E0)),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Map Placeholder", color = Color.DarkGray)
+                GoogleMap(
+                    modifier = Modifier.fillMaxSize(),
+                    cameraPositionState = cameraPositionState,
+                    properties = MapProperties(isMyLocationEnabled = false)
+                ) {
+                    // Markers
+                    Marker(
+                        state = MarkerState(pickupLatLng),
+                        title = "Pickup: $pickupName",
+                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)
+                    )
+                    Marker(
+                        state = MarkerState(dropoffLatLng),
+                        title = "Drop-off: $dropoffName",
+                        icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
+                    )
+
+                    // Route line
+                    if (routePoints.isNotEmpty()) {
+                        Polyline(
+                            points = routePoints,
+                            color = androidx.compose.ui.graphics.Color.Blue,
+                            width = 10f
+                        )
+                    }
+                }
             }
 
             // Custom Top Bar (Overlay)
             RideSelectionTopBar(
-                onBackClick = { /*TODO*/ },
-                onEditClick = { /*TODO*/ }
+                navController = navController,
+                onBackClick = { /* TODO: popBackStack() */ },
+                onEditClick = { /* TODO: navigate back */ },
+                pickupName = pickupName,
+                dropoffName = dropoffName
             )
 
             // "18 min" Tag
@@ -62,8 +148,7 @@ fun RideSelectionScreen() {
                     .padding(start = 16.dp, bottom = 40.dp) // Offset
             ) {
                 Text(
-                    text = "18 min",
-                    fontWeight = FontWeight.Bold,
+                    text = rideSelectionViewModel.lastRouteDurationText.value.ifBlank { "..." },
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
                 )
             }
@@ -84,15 +169,24 @@ fun RideSelectionScreen() {
         // --- Ride Selection Sheet Area ---
         RideSelectionSheet(
             selectedRide = selectedRide,
-            onRideSelected = { selectedRide = it }
+            onRideSelected = { selectedRide = it },
+            pickupName = pickupName,
+            dropoffName = dropoffName,
+            pickupLatLng = pickupLatLng,
+            dropoffLatLng = dropoffLatLng,
+            navController = navController,
+            rideSelectionViewModel
         )
     }
 }
 
 @Composable
 fun RideSelectionTopBar(
+    navController: NavController,
     onBackClick: () -> Unit,
-    onEditClick: () -> Unit
+    onEditClick: () -> Unit,
+    pickupName: String,
+    dropoffName: String
 ) {
     Card(
         shape = RoundedCornerShape(0.dp),
@@ -104,7 +198,7 @@ fun RideSelectionTopBar(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onBackClick) {
+            IconButton(onClick = { navController.popBackStack() }) {
                 Icon(Icons.Default.ArrowBack, contentDescription = "Back")
             }
 
@@ -137,7 +231,7 @@ fun RideSelectionTopBar(
                 // Locations
                 Column {
                     Text(
-                        text = "BINUS Anggrek Campus Basement",
+                        text = pickupName,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
@@ -145,7 +239,7 @@ fun RideSelectionTopBar(
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = "House of Mysteries 60 No. 283A",
+                        text = dropoffName,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
@@ -165,16 +259,25 @@ fun RideSelectionTopBar(
 @Composable
 fun RideSelectionSheet(
     selectedRide: String,
-    onRideSelected: (String) -> Unit
+    onRideSelected: (String) -> Unit,
+    pickupName: String,
+    dropoffName: String,
+    pickupLatLng: LatLng,
+    dropoffLatLng: LatLng,
+    navController: NavController,
+    rideSelectionViewModel: RideSelectionViewModel
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabs = listOf("Search", "Reserve")
+    val distanceKm = calculateDistanceInKm(pickupLatLng, dropoffLatLng)
+    val scooterPrice = calculatePrice(distanceKm, "Scooter")
+    val carPrice = calculatePrice(distanceKm, "Car")
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
-            .padding(top = 16.dp) // Padding for tabs
+            .padding(top = 16.dp)
     ) {
         // Tabs
         TabRow(
@@ -208,7 +311,7 @@ fun RideSelectionSheet(
                 icon = Icons.Default.TwoWheeler,
                 passengerInfo = "1",
                 timeInfo = "18 Minutes",
-                price = "15.000",
+                price = scooterPrice.toString(),
                 isSelected = selectedRide == "Scooter",
                 onClick = { onRideSelected("Scooter") }
             )
@@ -217,7 +320,7 @@ fun RideSelectionSheet(
                 icon = Icons.Default.DirectionsCar,
                 passengerInfo = "4 - 6",
                 timeInfo = "24 Minutes",
-                price = "23.000",
+                price = carPrice.toString(),
                 isSelected = selectedRide == "Car",
                 onClick = { onRideSelected("Car") }
             )
@@ -226,7 +329,20 @@ fun RideSelectionSheet(
 
             // Request Button
             Button(
-                onClick = { /* TODO: Handle request */ },
+                onClick = {
+                    Log.d("RideSelection", "Request button clicked")
+                    rideSelectionViewModel.requestRide(
+                        pickupName = pickupName,
+                        dropoffName = dropoffName,
+                        pickupLatLng = pickupLatLng,
+                        dropoffLatLng = dropoffLatLng,
+                        selectedRide = selectedRide,
+                        distance = (calculateDistanceInKm(pickupLatLng, dropoffLatLng) * 1000).toInt(),
+                        durationText = rideSelectionViewModel.lastRouteDurationText.value,
+                        price = if (selectedRide == "Scooter") scooterPrice else carPrice,
+                        navController = navController
+                    )
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
@@ -296,3 +412,29 @@ fun RideOptionItem(
         }
     }
 }
+
+fun calculateDistanceInKm(start: LatLng, end: LatLng): Double {
+    val earthRadius = 6371 // KM
+
+    val dLat = Math.toRadians(end.latitude - start.latitude)
+    val dLng = Math.toRadians(end.longitude - start.longitude)
+
+    val a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(Math.toRadians(start.latitude)) *
+            Math.cos(Math.toRadians(end.latitude)) *
+            Math.sin(dLng / 2) *
+            Math.sin(dLng / 2)
+
+    val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+
+    return earthRadius * c
+}
+
+fun calculatePrice(distance: Double, rideType: String): Int {
+    return when (rideType) {
+        "Scooter" -> (((distance * 1500).toInt() + 999) / 1000) * 1000
+        "Car" -> (((distance * 1500).toInt() + 999) / 1000) * 1000
+        else -> 0
+    }
+}
+

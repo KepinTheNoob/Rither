@@ -1,10 +1,6 @@
 package com.example.rither.screen.rideBooking
 
 import android.Manifest
-import android.content.pm.PackageManager
-import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -40,6 +36,7 @@ import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.net.FetchPlaceRequest
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
 import com.google.maps.android.compose.*
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -83,7 +80,11 @@ fun RideBookingScreen(navController: NavController) {
                 GoogleMap(
                     modifier = Modifier.fillMaxSize(),
                     cameraPositionState = cameraPositionState,
-                    properties = MapProperties(isMyLocationEnabled = true)
+                    properties = MapProperties(isMyLocationEnabled = true),
+                    uiSettings = MapUiSettings(
+                        zoomControlsEnabled = true,
+                        myLocationButtonEnabled = true
+                )
                 ) {
                     currentLocation?.let {
                         Marker(state = MarkerState(it), title = "You are here")
@@ -145,7 +146,10 @@ fun RideBookingScreen(navController: NavController) {
             onDropoffSelected = { name, latLng ->
                 dropoffName = name
                 dropoffLocation = latLng
-            }
+            },
+            pickupLocation = pickupLocation,
+            dropoffLocation = dropoffLocation,
+            navController = navController
         )
     }
 }
@@ -157,7 +161,10 @@ fun BookingSheet(
     onPickupSelected: (String, LatLng) -> Unit,
     dropoffName: String,
     onDropoffNameChange: (String) -> Unit,
-    onDropoffSelected: (String, LatLng) -> Unit
+    onDropoffSelected: (String, LatLng) -> Unit,
+    pickupLocation: LatLng?,
+    dropoffLocation: LatLng?,
+    navController: NavController
 ) {
     Column(
         modifier = Modifier
@@ -201,7 +208,13 @@ fun BookingSheet(
 
         Spacer(Modifier.height(24.dp))
         Button(
-            onClick = { /* Handle Next */ },
+            onClick = {
+                if (pickupLocation != null && dropoffLocation != null) {
+                    navController.navigate(
+                        "rideSelection/${pickupName}/${dropoffName}/${pickupLocation!!.latitude.toFloat()}/${pickupLocation!!.longitude.toFloat()}/${dropoffLocation!!.latitude.toFloat()}/${dropoffLocation!!.longitude.toFloat()}"
+                    )
+                }
+            },
             modifier = Modifier.fillMaxWidth().height(50.dp),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
@@ -219,14 +232,18 @@ fun LocationSearchBar(
     onPlaceSelected: (String, LatLng) -> Unit
 ) {
     var predictions by remember { mutableStateOf<List<AutocompletePrediction>>(emptyList()) }
+    var ignoreNextQuery by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val placesClient = remember { Places.createClient(context) }
 
-    // Track the current query and debounce it
     LaunchedEffect(query) {
-        // Wait 500ms after the last keystroke before running
-        kotlinx.coroutines.delay(500)
+        if (ignoreNextQuery) {
+            ignoreNextQuery = false
+            return@LaunchedEffect
+        }
+
+        delay(500)
 
         if (query.length > 2) {
             val request = FindAutocompletePredictionsRequest.builder()
@@ -265,11 +282,13 @@ fun LocationSearchBar(
                                 placeId,
                                 listOf(Place.Field.LAT_LNG, Place.Field.NAME)
                             ).build()
+
                             placesClient.fetchPlace(placeRequest)
                                 .addOnSuccessListener { result ->
                                     result.place.latLng?.let { latLng ->
-                                        onPlaceSelected(result.place.name ?: "", latLng)
                                         predictions = emptyList()
+                                        ignoreNextQuery = true
+                                        onPlaceSelected(result.place.name ?: "", latLng)
                                     }
                                 }
                         }

@@ -10,6 +10,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -19,12 +20,12 @@ import com.example.rither.screen.driver.DriverFlowScreen
 import com.example.rither.screen.driver.DriverOnboardingScreen
 import com.example.rither.screen.driver.DriverPendingScreen
 import com.example.rither.screen.driver.DriverSubmitScreen
+import com.example.rither.screen.home.ActivityScreen
 import com.example.rither.screen.home.HomeScreen
 import com.example.rither.screen.login.LoginScreen
 import com.example.rither.screen.notifications.NotificationsScreen
 import com.example.rither.screen.setting.SettingsScreen
 import com.example.rither.screen.notifications.sampleNotifications
-import com.example.rither.screen.offerRide.OfferRideScreen
 import com.example.rither.screen.profile.ProfileScreen
 import com.example.rither.screen.rideBooking.RideBookingScreen
 import com.example.rither.screen.rideDetails.RideDetailScreen
@@ -33,6 +34,7 @@ import com.example.rither.screen.signup.SignupScreen
 import com.example.rither.screen.studentVerification.CameraScreen
 import com.example.rither.screen.verifyEmail.VerifyEmailScreen
 import com.example.rither.ui.theme.RitherTheme
+import com.google.android.gms.maps.model.LatLng
 
 @Composable
 fun MainContent(
@@ -80,14 +82,11 @@ fun MainContent(
                 navController = navController
             )
         }
-        composable(Screen.OfferRide.name) {
-            OfferRideScreen(
-//                navController = navController
-            )
-        }
         composable(Screen.Profile.name) {
             ProfileScreen(
-//                navController = navController
+                navController = navController,
+                isDarkTheme = isDarkTheme,
+                onThemeChange = onThemeChange
             )
         }
         composable(Screen.RideDetails.name) {
@@ -123,8 +122,30 @@ fun MainContent(
                 navController = navController
             )
         }
-        composable(Screen.RideSelection.name) {
+        composable(
+            route = "rideSelection/{pickupName}/{dropoffName}/{pickupLat}/{pickupLng}/{dropoffLat}/{dropoffLng}",
+            arguments = listOf(
+                navArgument("pickupName") { type = NavType.StringType },
+                navArgument("dropoffName") { type = NavType.StringType },
+                navArgument("pickupLat") { type = NavType.FloatType },
+                navArgument("pickupLng") { type = NavType.FloatType },
+                navArgument("dropoffLat") { type = NavType.FloatType },
+                navArgument("dropoffLng") { type = NavType.FloatType }
+            )
+        ) { backStackEntry ->
+            val pickupName = backStackEntry.arguments?.getString("pickupName") ?: ""
+            val dropoffName = backStackEntry.arguments?.getString("dropoffName") ?: ""
+            val pickupLat = backStackEntry.arguments?.getFloat("pickupLat") ?: 0f
+            val pickupLng = backStackEntry.arguments?.getFloat("pickupLng") ?: 0f
+            val dropoffLat = backStackEntry.arguments?.getFloat("dropoffLat") ?: 0f
+            val dropoffLng = backStackEntry.arguments?.getFloat("dropoffLng") ?: 0f
+
             RideSelectionScreen(
+                navController = navController,
+                pickupName = pickupName,
+                dropoffName = dropoffName,
+                pickupLatLng = LatLng(pickupLat.toDouble(), pickupLng.toDouble()),
+                dropoffLatLng = LatLng(dropoffLat.toDouble(), dropoffLng.toDouble())
             )
         }
         composable(Screen.DriverOnboarding.name) {
@@ -144,6 +165,11 @@ fun MainContent(
         }
         composable(Screen.DriverPending.name) {
             DriverPendingScreen(
+                navController = navController
+            )
+        }
+        composable(Screen.Activity.name) {
+            ActivityScreen(
                 navController = navController
             )
         }

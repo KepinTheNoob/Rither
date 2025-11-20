@@ -17,4 +17,5 @@
     <string name="driverFlow" />
     <string name="driverSubmit" />
     <string name="driverPending" />
+    <string name="activity" />
 </resources>
