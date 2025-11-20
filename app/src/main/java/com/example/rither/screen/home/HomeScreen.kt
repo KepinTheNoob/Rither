@@ -120,18 +120,6 @@ fun HomeScreenContent(
         }
 
         item {
-            RideActionCard(
-                navController,
-                title = "Reserve",
-                subtitle = "Reserve rides on specific dates",
-                icon = Icons.Default.CalendarToday,
-                backgroundColor = MaterialTheme.colorScheme.tertiaryContainer,
-                iconColor = Color(0xFF008A5F),
-                onClick = { navController.navigate(Screen.RideSelection.name) }
-            )
-        }
-
-        item {
             SectionHeader("Explore")
         }
 

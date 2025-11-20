@@ -25,5 +25,7 @@ data class Ride(
     val currentPassengers: Int = 0,
 
     val createdAt: Long = System.currentTimeMillis(),
+    val appointmentTime: Long? = null,
+    val appointmentText: String? = null,
     val completedAt: Long? = null
 )

@@ -1,5 +1,7 @@
 package com.example.rither.screen.rideSelection
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -9,6 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.GpsFixed
@@ -22,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -38,6 +42,9 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 @Composable
 fun RideSelectionScreen(
@@ -272,6 +279,9 @@ fun RideSelectionSheet(
     val distanceKm = calculateDistanceInKm(pickupLatLng, dropoffLatLng)
     val scooterPrice = calculatePrice(distanceKm, "Scooter")
     val carPrice = calculatePrice(distanceKm, "Car")
+    var appointmentTime by remember { mutableStateOf<Long?>(null) }
+    var appointmentTimeText by remember { mutableStateOf("") }
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -299,7 +309,6 @@ fun RideSelectionSheet(
             }
         }
 
-        // Ride Options (assuming 'Search' tab is selected)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -327,10 +336,58 @@ fun RideSelectionSheet(
 
             Spacer(Modifier.height(8.dp))
 
+            if (selectedTabIndex == 1) {  // Reserve tab
+                OutlinedTextField(
+                    value = appointmentTimeText,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Reservation Time") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    trailingIcon = {
+                        IconButton(onClick = {
+                            val calendar = Calendar.getInstance()
+
+                            // DATE PICKER
+                            DatePickerDialog(
+                                context,
+                                { _, y, m, d ->
+                                    // TIME PICKER AFTER DATE CONFIRMED
+                                    TimePickerDialog(
+                                        context,
+                                        { _, hour, minute ->
+                                            val cal = Calendar.getInstance()
+                                            cal.set(y, m, d, hour, minute, 0)
+
+                                            appointmentTime = cal.timeInMillis
+                                            appointmentTimeText = SimpleDateFormat("dd MMM yyyy, HH:mm",
+                                                Locale.getDefault())
+                                                .format(cal.time)
+                                        },
+                                        calendar.get(Calendar.HOUR_OF_DAY),
+                                        calendar.get(Calendar.MINUTE),
+                                        true
+                                    ).show()
+                                },
+                                calendar.get(Calendar.YEAR),
+                                calendar.get(Calendar.MONTH),
+                                calendar.get(Calendar.DAY_OF_MONTH)
+                            ).show()
+                        }) {
+                            Icon(Icons.Default.CalendarToday, contentDescription = "Pick time")
+                        }
+                    }
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
+
             // Request Button
             Button(
                 onClick = {
-                    Log.d("RideSelection", "Request button clicked")
+                    val isReserve = selectedTabIndex == 1
+
                     rideSelectionViewModel.requestRide(
                         pickupName = pickupName,
                         dropoffName = dropoffName,
@@ -340,7 +397,10 @@ fun RideSelectionSheet(
                         distance = (calculateDistanceInKm(pickupLatLng, dropoffLatLng) * 1000).toInt(),
                         durationText = rideSelectionViewModel.lastRouteDurationText.value,
                         price = if (selectedRide == "Scooter") scooterPrice else carPrice,
-                        navController = navController
+                        navController = navController,
+                        isReserved = isReserve,
+                        appointmentTime = appointmentTime,
+                        appointmentText = appointmentTimeText
                     )
                 },
                 modifier = Modifier
@@ -406,7 +466,7 @@ fun RideOptionItem(
                 }
             }
 
-            Text("Rp", style = MaterialTheme.typography.bodySmall, modifier = Modifier.align(Alignment.Top))
+            Text("Rp", style = MaterialTheme.typography.bodySmall)
             Spacer(Modifier.width(4.dp))
             Text(price, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
         }
@@ -432,7 +492,7 @@ fun calculateDistanceInKm(start: LatLng, end: LatLng): Double {
 
 fun calculatePrice(distance: Double, rideType: String): Int {
     return when (rideType) {
-        "Scooter" -> (((distance * 1500).toInt() + 999) / 1000) * 1000
+        "Scooter" -> (((distance * 1000).toInt() + 999) / 1000) * 1000
         "Car" -> (((distance * 1500).toInt() + 999) / 1000) * 1000
         else -> 0
     }

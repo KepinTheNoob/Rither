@@ -26,6 +26,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.rither.data.Screen
 import com.example.rither.data.model.Ride
+import com.google.firebase.auth.FirebaseAuth
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -183,7 +184,9 @@ fun ActivityScreenContent(
             }
             "Reservations" -> {
                 item {
-                    ReservationsContent(filter = selectedReservationFilter)
+                    ReservationsContent(
+                        filter = selectedReservationFilter, activityViewModel = activityViewModel
+                    )
                 }
             }
         }
@@ -381,23 +384,111 @@ fun RideRouteInfo(start: String, end: String) {
 }
 
 @Composable
-fun ReservationsContent(filter: String) {
+fun ReservationsContent(
+    filter: String,
+    activityViewModel: ActivityViewModel
+) {
+    val upcomingRides = remember(filter, activityViewModel.rideHistory.collectAsState().value) {
+        if (filter == "Upcoming") {
+            activityViewModel.getUpcomingReservations()
+        } else emptyList()
+    }
+
     if (filter == "Upcoming") {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .background(
-                    MaterialTheme.colorScheme.surface,
-                    RoundedCornerShape(16.dp)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "Upcoming",
-                style = MaterialTheme.typography.bodyLarge,
-                color = Color.Gray
-            )
+
+        if (upcomingRides.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No upcoming rides.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.Gray
+                )
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth()
+                    .heightIn(max = 500.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(upcomingRides) { ride ->
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    ) {
+                        var driverName by remember { mutableStateOf<String?>(null)}
+
+                        LaunchedEffect(Unit) {
+                            driverName = activityViewModel.getDriverName(ride.driverId.toString())
+                        }
+
+                        Row(
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = ride.createdAt.toString(),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.Gray
+                                )
+
+                                RideRouteInfo(
+                                    start = ride.pickUpAddress,
+                                    end = ride.dropOffAddress
+                                )
+
+                                Text(
+                                    text = "Driver: $driverName",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.Gray
+                                )
+                            }
+
+                            Column(
+                                horizontalAlignment = Alignment.End,
+                                verticalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.height(IntrinsicSize.Min)
+                            ) {
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text(
+                                        text = "Rp ${formatRupiah(ride.price)}",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = ride.rideType,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color.Gray
+                                    )
+                                }
+                                Spacer(modifier = Modifier.weight(1f))
+                                Button(
+                                    onClick = { /* TODO: Book Again */ },
+                                    shape = RoundedCornerShape(50),
+                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                    modifier = Modifier.height(36.dp)
+                                ) {
+                                    Text("Book Again", fontSize = 12.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     } else {
         Box(
@@ -414,6 +505,8 @@ fun ReservationsContent(filter: String) {
         }
     }
 }
+
+
 
 fun formatRupiah(amount: Int): String {
     val formatter = NumberFormat.getNumberInstance(Locale("in", "ID"))

@@ -67,4 +67,14 @@ class ActivityViewModel : ViewModel() {
             null
         }
     }
+
+    fun getUpcomingReservations(): List<Ride> {
+        val userId = auth.currentUser?.uid ?: return emptyList()
+
+        return _rideHistory.value.filter { ride ->
+            ride.status == "pending" &&
+                    ride.passengerId.contains(userId)
+        }
+    }
+
 }

@@ -147,7 +147,10 @@ class RideSelectionViewModel : ViewModel() {
         distance: Int,
         durationText: String,
         price: Int,
-        navController: NavController
+        navController: NavController,
+        isReserved: Boolean,
+        appointmentTime: Long?,
+        appointmentText: String?
     ) {
         val db = FirebaseFirestore.getInstance()
         val auth = FirebaseAuth.getInstance()
@@ -178,7 +181,10 @@ class RideSelectionViewModel : ViewModel() {
             "currentPassengers" to 1,
 
             "createdAt" to System.currentTimeMillis(),
-            "completedAt" to null
+            "completedAt" to null,
+            "isReserved" to isReserved,
+            "appointmentTime" to appointmentTime,
+            "appointmentText" to appointmentText
         )
 
         docRef.set(rideData)
