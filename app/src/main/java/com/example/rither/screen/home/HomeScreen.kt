@@ -1,6 +1,7 @@
 package com.example.rither.screen.home
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.DrawableRes
@@ -44,6 +45,7 @@ import androidx.lifecycle.ViewModel
 import androidx.navigation.NavController
 import com.example.rither.data.Screen
 import com.example.rither.R
+import kotlin.math.log
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,8 +53,6 @@ fun HomeScreen(
     navController: NavController,
     homeViewModel: HomeViewModel = viewModel()
 ) {
-    var selectedBottomItem by remember { mutableStateOf("Home") }
-
     Scaffold(
         topBar = { HomeTopBar(navController) },
         bottomBar = {
@@ -129,22 +129,32 @@ fun HomeScreenContent(
                 subtitle = "Get support anywhere, anytime",
                 imageRes = R.drawable.support,
                 placeholderColor = Color.DarkGray,
-                onClick = {}
+                onClick = {
+                    println("Home screen init called")}
             )
         }
 
         item {
             ExploreCard(
-                title = "Be a Driver!",
-                subtitle = "Sign up if you have a car or scooter",
+                title = if (homeViewModel.isDriver.value) "Driver App" else "Be a Driver!",
+                subtitle = if (homeViewModel.isDriver.value)
+                    "Access your driver dashboard"
+                else
+                    "Sign up if you have a car or scooter",
                 imageRes = R.drawable.driver,
                 placeholderColor = Color.Gray,
-                onClick = { navController.navigate(Screen.DriverOnboarding.name) }
+                onClick = {
+                    if (homeViewModel.isDriver.value) {
+                            navController.navigate(Screen.DriverDashboard.name)
+                    } else {
+                        navController.navigate(Screen.DriverOnboarding.name)
+                    }
+                }
             )
         }
 
         item {
-            Spacer(Modifier.height(16.dp)) // Extra space at the bottom
+            Spacer(Modifier.height(16.dp))
         }
     }
 }

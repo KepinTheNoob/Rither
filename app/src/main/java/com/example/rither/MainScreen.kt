@@ -20,6 +20,7 @@ import com.example.rither.screen.driver.DriverFlowScreen
 import com.example.rither.screen.driver.DriverOnboardingScreen
 import com.example.rither.screen.driver.DriverPendingScreen
 import com.example.rither.screen.driver.DriverSubmitScreen
+import com.example.rither.screen.driver.page.DriverDashboardScreen
 import com.example.rither.screen.home.ActivityScreen
 import com.example.rither.screen.home.HomeScreen
 import com.example.rither.screen.login.LoginScreen
@@ -170,6 +171,11 @@ fun MainContent(
         }
         composable(Screen.Activity.name) {
             ActivityScreen(
+                navController = navController
+            )
+        }
+        composable(Screen.DriverDashboard.name) {
+            DriverDashboardScreen(
                 navController = navController
             )
         }

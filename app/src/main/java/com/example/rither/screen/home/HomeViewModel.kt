@@ -1,6 +1,7 @@
 package com.example.rither.screen.home
 
 import android.util.Log
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.rither.data.model.Ride
@@ -23,6 +24,13 @@ class HomeViewModel : ViewModel() {
 
     var isLoading: Boolean = true
         private set
+
+    var isDriver = mutableStateOf(false)
+        private set
+
+    init {
+        loadUserDriverStatus()
+    }
 
     suspend fun getUserName(): String? {
         val userId = auth.currentUser?.uid ?: return null
@@ -49,8 +57,19 @@ class HomeViewModel : ViewModel() {
         }
     }
 
+    private fun loadUserDriverStatus() {
+        val uid = auth.currentUser?.uid ?: return
 
-    suspend fun getHistory() {
-
+        db.collection("users")
+            .document(uid)
+            .get()
+            .addOnSuccessListener { doc ->
+                val user = doc.toObject(User::class.java)
+                isDriver.value = user?.driver ?: false
+            }
+            .addOnFailureListener {
+                isDriver.value = false
+            }
     }
+
 }

@@ -1,5 +1,8 @@
-package com.example.rither.screen.home
+package com.example.rither.screen.driver.page
 
+import androidx.compose.foundation.lazy.items
+import com.example.rither.screen.home.ActivityViewModel
+import com.example.rither.screen.home.HomeBottomBar
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -9,6 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.QuestionMark
@@ -16,6 +20,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -26,51 +31,34 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.rither.data.Screen
 import com.example.rither.data.model.Ride
-import com.google.firebase.auth.FirebaseAuth
 import java.text.NumberFormat
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ActivityScreen(
+fun DriverDashboardScreen(
     navController: NavController,
-    activityViewModel: ActivityViewModel = viewModel()
+    driverDashboardViewModel: DriverDashboardViewModel = viewModel()
 ) {
-    var selectedMainTab by remember { mutableStateOf("History") }
+    var selectedMainTab by remember { mutableStateOf("Request") }
 
     Scaffold(
-        topBar = { ActivityTopBar() },
-        bottomBar = {
-            HomeBottomBar(
-                selectedItem = "Rides",
-                onItemSelected = { itemName ->
-                    if (itemName == "Home") {
-                        navController.navigate(Screen.Home.name) {
-                            popUpTo(navController.graph.startDestinationId) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
-                }
-            )
-        },
+        topBar = { DriverDashboardTopBar(navController = navController) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        ActivityScreenContent(
+        DriverDashboardScreenContent(
             modifier = Modifier
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp),
             selectedMainTab = selectedMainTab,
             onMainTabSelected = { selectedMainTab = it },
-            activityViewModel = activityViewModel
+            driverDashboardViewModel = driverDashboardViewModel
         )
     }
 }
 
 @Composable
-fun ActivityTopBar() {
+fun DriverDashboardTopBar(navController: NavController) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -78,51 +66,51 @@ fun ActivityTopBar() {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
+        IconButton(
+            onClick = { navController.popBackStack() },
+            modifier = Modifier
+                .padding(16.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surface)
+        ) {
+            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+        }
+
         Text(
-            "Activity",
+            "Driver Dashboard",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )
-        IconButton(
-            onClick = { /* TODO: Help action */ },
-            colors = IconButtonDefaults.iconButtonColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.onSurface
-            ),
-            modifier = Modifier.shadow(elevation = 2.dp, shape = CircleShape)
-        ) {
-            Icon(Icons.Default.QuestionMark, contentDescription = "Help")
-        }
     }
 }
 
 @Composable
-fun ActivityScreenContent(
+fun DriverDashboardScreenContent(
     modifier: Modifier = Modifier,
     selectedMainTab: String,
     onMainTabSelected: (String) -> Unit,
-    activityViewModel: ActivityViewModel
+    driverDashboardViewModel: DriverDashboardViewModel
 ) {
     val historyFilters = listOf("All", "Scooter", "Car")
-    val reservationFilters = listOf("All", "Scooter", "Car", "Upcoming", "Done")
 
     var selectedHistoryFilter by remember { mutableStateOf(historyFilters.first()) }
-    var selectedReservationFilter by remember { mutableStateOf(reservationFilters[3]) }
 
-    val isLoading by activityViewModel.isLoading.collectAsStateWithLifecycle()
-    val rideHistoryItems by activityViewModel.rideHistory.collectAsStateWithLifecycle()
+    val isLoading by driverDashboardViewModel.isLoading.collectAsStateWithLifecycle()
+    val rideHistoryItems by driverDashboardViewModel.rideHistory.collectAsStateWithLifecycle()
+    val requestItems by driverDashboardViewModel.requests.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
-        activityViewModel.loadRideHistory()
+        driverDashboardViewModel.loadRequests()
+        driverDashboardViewModel.loadReservations()
     }
 
-    val filteredRideHistory = remember(rideHistoryItems, selectedHistoryFilter) {
-        if (selectedHistoryFilter == "All") {
-            rideHistoryItems
-        } else {
-            rideHistoryItems.filter { it.rideType == selectedHistoryFilter }
-        }
-    }
+//    val filteredRideHistory = remember(rideHistoryItems, selectedHistoryFilter) {
+//        if (selectedHistoryFilter == "All") {
+//            rideHistoryItems
+//        } else {
+//            rideHistoryItems.filter { it.rideType == selectedHistoryFilter }
+//        }
+//    }
 
     LazyColumn(
         modifier = modifier,
@@ -137,21 +125,16 @@ fun ActivityScreenContent(
 
         item {
             when (selectedMainTab) {
-                "History" -> FilterChipRow(
+                "Request" -> FilterChipRow(
                     filters = historyFilters,
                     selectedFilter = selectedHistoryFilter,
                     onFilterSelected = { selectedHistoryFilter = it }
-                )
-                "Reservations" -> FilterChipRow(
-                    filters = reservationFilters,
-                    selectedFilter = selectedReservationFilter,
-                    onFilterSelected = { selectedReservationFilter = it }
                 )
             }
         }
 
         when (selectedMainTab) {
-            "History" -> {
+            "Request" -> {
                 if (isLoading) {
                     item {
                         Box(
@@ -163,29 +146,25 @@ fun ActivityScreenContent(
                             CircularProgressIndicator()
                         }
                     }
-                } else if (filteredRideHistory.isEmpty()) {
+                } else if (requestItems.isEmpty()) {
                     item {
                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 32.dp),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            // Show a more helpful message
-                            val message = if (selectedHistoryFilter == "All") "You have no ride history." else "No $selectedHistoryFilter rides found."
-                            Text(message, color = Color.Gray)
+                            Text("No ride requests available.", color = Color.Gray)
                         }
                     }
                 } else {
-                    items(filteredRideHistory) { ride ->
-                        RideHistoryItem(ride = ride, activityViewModel = activityViewModel)
+                    items(requestItems) { ride ->
+                        RequestItem(ride = ride, driverDashboardViewModel = driverDashboardViewModel)
                     }
                 }
             }
             "Reservations" -> {
                 item {
                     ReservationsContent(
-                        filter = selectedReservationFilter, activityViewModel = activityViewModel
+                        driverDashboardViewModel = driverDashboardViewModel
                     )
                 }
             }
@@ -200,7 +179,7 @@ fun MainTabRow(
     selectedTab: String,
     onTabSelected: (String) -> Unit
 ) {
-    val tabs = listOf("History", "Reservations")
+    val tabs = listOf("Request", "Reservations")
     TabRow(
         selectedTabIndex = tabs.indexOf(selectedTab),
         containerColor = Color.Transparent,
@@ -268,7 +247,7 @@ fun FilterChipRow(
 }
 
 @Composable
-fun RideHistoryItem(ride: Ride, activityViewModel: ActivityViewModel) {
+fun RequestItem(ride: Ride, driverDashboardViewModel: DriverDashboardViewModel) {
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -278,7 +257,7 @@ fun RideHistoryItem(ride: Ride, activityViewModel: ActivityViewModel) {
         var driverName by remember { mutableStateOf<String?>(null)}
 
         LaunchedEffect(Unit) {
-            driverName = activityViewModel.getDriverName(ride.driverId.toString())
+            driverName = driverDashboardViewModel.getDriverName(ride.driverId.toString())
         }
 
         Row(
@@ -301,12 +280,6 @@ fun RideHistoryItem(ride: Ride, activityViewModel: ActivityViewModel) {
                     start = ride.pickUpAddress,
                     end = ride.dropOffAddress
                 )
-
-                Text(
-                    text = "Driver: $driverName",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
-                )
             }
 
             Column(
@@ -328,12 +301,12 @@ fun RideHistoryItem(ride: Ride, activityViewModel: ActivityViewModel) {
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 Button(
-                    onClick = { /* TODO: Book Again */ },
+                    onClick = { driverDashboardViewModel.acceptRideRequest(ride.id ?: "") },
                     shape = RoundedCornerShape(50),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     modifier = Modifier.height(36.dp)
                 ) {
-                    Text("Book Again", fontSize = 12.sp)
+                    Text("Become Driver", fontSize = 12.sp)
                 }
             }
         }
@@ -385,130 +358,44 @@ fun RideRouteInfo(start: String, end: String) {
 
 @Composable
 fun ReservationsContent(
-    filter: String,
-    activityViewModel: ActivityViewModel
+    driverDashboardViewModel: DriverDashboardViewModel
 ) {
-    val upcomingRides = remember(filter, activityViewModel.rideHistory.collectAsState().value) {
-        if (filter == "Upcoming") {
-            activityViewModel.getUpcomingReservations()
-        } else emptyList()
-    }
+    val reservation by driverDashboardViewModel.driverReservation.collectAsState()
 
-    if (filter == "Upcoming") {
-
-        if (upcomingRides.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "No upcoming rides.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color.Gray
-                )
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth()
-                    .heightIn(max = 500.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(upcomingRides) { ride ->
-                    Card(
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    ) {
-                        var driverName by remember { mutableStateOf<String?>(null)}
-
-                        LaunchedEffect(Unit) {
-                            driverName = activityViewModel.getDriverName(ride.driverId.toString())
-                        }
-
-                        Row(
-                            modifier = Modifier
-                                .padding(16.dp)
-                                .fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Text(
-                                    text = ride.createdAt.toString(),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color.Gray
-                                )
-
-                                RideRouteInfo(
-                                    start = ride.pickUpAddress,
-                                    end = ride.dropOffAddress
-                                )
-
-                                Text(
-                                    text = "Driver: $driverName",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color.Gray
-                                )
-                            }
-
-                            Column(
-                                horizontalAlignment = Alignment.End,
-                                verticalArrangement = Arrangement.SpaceBetween,
-                                modifier = Modifier.height(IntrinsicSize.Min)
-                            ) {
-                                Column(horizontalAlignment = Alignment.End) {
-                                    Text(
-                                        text = "Rp ${formatRupiah(ride.price)}",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        text = ride.rideType,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = Color.Gray
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.weight(1f))
-
-                                Button(
-                                    onClick = { /* TODO: Book Again */ },
-                                    shape = RoundedCornerShape(50),
-                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                                    modifier = Modifier.height(36.dp)
-                                ) {
-                                    Text("Book Again", fontSize = 12.sp)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    } else {
+    if (reservation == null) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp),
+                .padding(32.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "No items for filter: $filter",
-                style = MaterialTheme.typography.bodyLarge,
-                color = Color.Gray
-            )
+            Button(onClick = {
+                // TODO: navigate to create reservation page
+            }) {
+                Text("Create Reservation")
+            }
+        }
+    } else {
+        // Driver ALREADY has a reservation
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("Your Reservation", fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(12.dp))
+
+                Text("Pickup: ${reservation!!.pickUpAddress}")
+                Text("Dropoff: ${reservation!!.dropOffAddress}")
+                Text("Time: ${reservation!!.appointmentTime}")
+            }
         }
     }
 }
-
-
 
 fun formatRupiah(amount: Int): String {
     val formatter = NumberFormat.getNumberInstance(Locale("in", "ID"))

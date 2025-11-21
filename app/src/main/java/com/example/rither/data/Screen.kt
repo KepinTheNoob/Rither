@@ -22,4 +22,5 @@ enum class Screen(@StringRes val title: Int) {
     DriverSubmit(title = R.string.driverSubmit),
     DriverPending(title = R.string.driverPending),
     Activity(title = R.string.activity),
+    DriverDashboard(title = R.string.driverDashboard),
 }

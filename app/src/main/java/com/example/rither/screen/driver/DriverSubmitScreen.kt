@@ -85,7 +85,6 @@ fun DriverSubmitScreen(
         ) {
             Spacer(Modifier.height(32.dp))
 
-            // Placeholder for the illustration
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
