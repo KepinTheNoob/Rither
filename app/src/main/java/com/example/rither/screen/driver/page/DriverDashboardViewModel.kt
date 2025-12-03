@@ -73,8 +73,6 @@ class DriverDashboardViewModel : ViewModel() {
             }
     }
 
-
-
     fun loadRequests() {
         db.collection("rides")
             .whereEqualTo("driverId", null)
@@ -126,5 +124,49 @@ class DriverDashboardViewModel : ViewModel() {
                 println("❌ ERROR → Failed to assign ride: ${e.message}")
                 onFailure(e)
             }
+    }
+
+    fun cancelReservation(rideId: String, onSuccess: () -> Unit = {}, onFailure: (Exception) -> Unit = {}) {
+        val rideRef = db.collection("rides").document(rideId)
+
+        rideRef.get()
+            .addOnSuccessListener { doc ->
+                if (!doc.exists()) {
+                    onFailure(Exception("Ride does not exist"))
+                    return@addOnSuccessListener
+                }
+
+                val passengerId = doc.getString("passengerId")
+                val driverId = doc.getString("driverId")
+
+                // CASE 1: No passenger AND no driver → DELETE
+                if (passengerId.isNullOrEmpty() && driverId.isNullOrEmpty()) {
+                    rideRef.delete()
+                        .addOnSuccessListener {
+                            println("DEBUG → Ride deleted (no passenger & no driver)")
+                            onSuccess()
+                        }
+                        .addOnFailureListener(onFailure)
+                    return@addOnSuccessListener
+                }
+
+                // CASE 2: Has passenger but NO driver → RESET to pending
+                if (!passengerId.isNullOrEmpty() && driverId.isNullOrEmpty()) {
+                    rideRef.update(
+                        mapOf(
+                            "status" to "pending",
+                            "driverId" to null
+                        )
+                    ).addOnSuccessListener {
+                        println("DEBUG → Ride reset to pending (has passenger, no driver)")
+                        onSuccess()
+                    }.addOnFailureListener(onFailure)
+                    return@addOnSuccessListener
+                }
+
+                // CASE 3: Block if ride is active with driver + passenger
+                onFailure(Exception("Cannot cancel — ride currently active or assigned"))
+            }
+            .addOnFailureListener(onFailure)
     }
 }

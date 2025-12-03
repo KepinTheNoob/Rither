@@ -83,16 +83,6 @@ fun ActivityTopBar() {
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )
-        IconButton(
-            onClick = { /* TODO: Help action */ },
-            colors = IconButtonDefaults.iconButtonColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.onSurface
-            ),
-            modifier = Modifier.shadow(elevation = 2.dp, shape = CircleShape)
-        ) {
-            Icon(Icons.Default.QuestionMark, contentDescription = "Help")
-        }
     }
 }
 
@@ -104,23 +94,27 @@ fun ActivityScreenContent(
     activityViewModel: ActivityViewModel
 ) {
     val historyFilters = listOf("All", "Scooter", "Car")
-    val reservationFilters = listOf("All", "Scooter", "Car", "Upcoming", "Done")
+    val reservationFilters = listOf("All", "Scooter", "Car", "Upcoming", "Assigned")
 
     var selectedHistoryFilter by remember { mutableStateOf(historyFilters.first()) }
     var selectedReservationFilter by remember { mutableStateOf(reservationFilters[3]) }
 
     val isLoading by activityViewModel.isLoading.collectAsStateWithLifecycle()
     val rideHistoryItems by activityViewModel.rideHistory.collectAsStateWithLifecycle()
+    val rideReservationItems by activityViewModel.rideHistory.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         activityViewModel.loadRideHistory()
     }
 
     val filteredRideHistory = remember(rideHistoryItems, selectedHistoryFilter) {
-        if (selectedHistoryFilter == "All") {
-            rideHistoryItems
-        } else {
-            rideHistoryItems.filter { it.rideType == selectedHistoryFilter }
+        val completed = rideHistoryItems.filter { it.status.equals("complete", ignoreCase = true) }
+
+        when (selectedHistoryFilter) {
+            "All" -> completed
+            "Scooter" -> completed.filter { it.rideType.equals("scooter", ignoreCase = true) }
+            "Car" -> completed.filter { it.rideType.equals("car", ignoreCase = true) }
+            else -> completed
         }
     }
 
@@ -388,15 +382,38 @@ fun ReservationsContent(
     filter: String,
     activityViewModel: ActivityViewModel
 ) {
-    val upcomingRides = remember(filter, activityViewModel.rideHistory.collectAsState().value) {
-        if (filter == "Upcoming") {
-            activityViewModel.getUpcomingReservations()
-        } else emptyList()
+    val rides = remember(filter, activityViewModel.rideHistory.collectAsState().value) {
+        val base = activityViewModel.rideHistory.value
+            .filter {
+                it.passengerId.contains(activityViewModel.getCurrentUserId()) &&
+                        !it.status.equals("complete", ignoreCase = true)
+            }
+
+        when (filter) {
+            "All" -> base
+
+            "Scooter" -> base.filter {
+                it.rideType.equals("scooter", ignoreCase = true)
+            }
+
+            "Car" -> base.filter {
+                it.rideType.equals("car", ignoreCase = true)
+            }
+
+            "Upcoming" -> base.filter {
+                it.status.equals("pending", ignoreCase = true)
+            }
+
+            "Assigned" -> base.filter {
+                it.status.equals("assigned", ignoreCase = true)
+            }
+
+            else -> emptyList()
+        }
     }
 
-    if (filter == "Upcoming") {
-
-        if (upcomingRides.isEmpty()) {
+    if (filter.isNotEmpty()) {
+        if (rides.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -411,11 +428,12 @@ fun ReservationsContent(
             }
         } else {
             LazyColumn(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
                     .heightIn(max = 500.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(upcomingRides) { ride ->
+                items(rides) { ride ->
                     Card(
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier
@@ -424,7 +442,7 @@ fun ReservationsContent(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                     ) {
-                        var driverName by remember { mutableStateOf<String?>(null)}
+                        var driverName by remember { mutableStateOf<String?>(null) }
 
                         LaunchedEffect(Unit) {
                             driverName = activityViewModel.getDriverName(ride.driverId.toString())
@@ -479,12 +497,23 @@ fun ReservationsContent(
                                 Spacer(modifier = Modifier.weight(1f))
 
                                 Button(
-                                    onClick = { /* TODO: Book Again */ },
+                                    onClick = {
+                                        activityViewModel.cancelReservation(
+                                            rideId = ride.id ?: "",
+                                            onSuccess = {
+                                                println("DEBUG → Reservation cancelled, reloading history")
+                                                activityViewModel.loadRideHistory()
+                                            },
+                                            onFailure = { e ->
+                                                println("❌ Cancel failed → ${e.message}")
+                                            }
+                                        )
+                                    },
                                     shape = RoundedCornerShape(50),
                                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                                     modifier = Modifier.height(36.dp)
                                 ) {
-                                    Text("Book Again", fontSize = 12.sp)
+                                    Text("Cancel", fontSize = 12.sp)
                                 }
                             }
                         }

@@ -45,6 +45,7 @@ import androidx.lifecycle.ViewModel
 import androidx.navigation.NavController
 import com.example.rither.data.Screen
 import com.example.rither.R
+import com.example.rither.data.model.Ride
 import kotlin.math.log
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -89,6 +90,12 @@ fun HomeScreenContent(
     navController: NavController,
     modifier: Modifier = Modifier
 ) {
+    LaunchedEffect(Unit) {
+        homeViewModel.loadLatestRide()
+    }
+
+    val latestRide by homeViewModel.latestRide.collectAsState()
+
     LazyColumn(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -100,7 +107,7 @@ fun HomeScreenContent(
         }
 
         item {
-            LatestRideCard()
+            LatestRideCard(latestRide, homeViewModel = homeViewModel)
         }
 
         item {
@@ -241,10 +248,20 @@ fun Greeting(
 }
 
 @Composable
-fun LatestRideCard() {
+fun LatestRideCard(ride: Ride?, homeViewModel: HomeViewModel) {
+    if (ride == null) {
+        return // Show nothing if no ride yet
+    }
+
+    var driverName by remember { mutableStateOf<String?>(null)}
+
+    LaunchedEffect(Unit) {
+        driverName = homeViewModel.getDriverName(ride.driverId.toString())
+    }
+
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFE6F9E0)), // Light green
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFE6F9E0)),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -253,73 +270,71 @@ fun LatestRideCard() {
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Left Side (Route Info)
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Route Visualizer
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
                         Icons.Default.Circle,
-                        contentDescription = "Start",
+                        contentDescription = null,
                         tint = Color.Blue,
                         modifier = Modifier.size(12.dp)
                     )
                     Divider(
                         modifier = Modifier
                             .height(30.dp)
-                            .width(1.dp), color = Color.Gray
+                            .width(1.dp),
+                        color = Color.Gray
                     )
                     Icon(
                         Icons.Default.LocationOn,
-                        contentDescription = "End",
+                        contentDescription = null,
                         tint = Color.Blue,
                         modifier = Modifier.size(14.dp)
                     )
                 }
 
-                // Locations & Driver
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        text = "BINUS Anggrek Campus Basement",
+                        text = ride.pickUpAddress,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = "House of Mysteries 60 No. 283A",
+                        text = ride.dropOffAddress,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        text = "Driver: Yogunmandr Daltae Heinmen",
+                        text = "Driver: ${driverName ?: "Unknown"}",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.Gray
                     )
                 }
             }
 
-            // Right Side (Price & Button)
             Column(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.height(IntrinsicSize.Max) // To align button
+                modifier = Modifier.height(IntrinsicSize.Max)
             ) {
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = "Rp 12.000",
+                        text = "Rp ${ride.price}",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Scooter",
+                        text = ride.rideType ?: "Unknown",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.Gray
                     )
                 }
+
                 Spacer(modifier = Modifier.weight(1f))
+
                 Button(
-                    onClick = { /* TODO */ },
+                    onClick = { /* TODO: rebook */ },
                     shape = RoundedCornerShape(50),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     modifier = Modifier.height(36.dp)

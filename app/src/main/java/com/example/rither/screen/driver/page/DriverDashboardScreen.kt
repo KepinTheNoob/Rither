@@ -1,11 +1,18 @@
 package com.example.rither.screen.driver.page
 
-import androidx.compose.foundation.lazy.items
-import com.example.rither.screen.home.ActivityViewModel
-import com.example.rither.screen.home.HomeBottomBar
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -15,13 +22,33 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.QuestionMark
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -29,8 +56,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.rither.data.Screen
 import com.example.rither.data.model.Ride
+import com.example.rither.screen.home.RideRouteInfo
+import com.example.rither.screen.home.formatRupiah
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -104,14 +132,6 @@ fun DriverDashboardScreenContent(
         driverDashboardViewModel.loadReservations()
     }
 
-//    val filteredRideHistory = remember(rideHistoryItems, selectedHistoryFilter) {
-//        if (selectedHistoryFilter == "All") {
-//            rideHistoryItems
-//        } else {
-//            rideHistoryItems.filter { it.rideType == selectedHistoryFilter }
-//        }
-//    }
-
     LazyColumn(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -149,17 +169,46 @@ fun DriverDashboardScreenContent(
                 } else if (requestItems.isEmpty()) {
                     item {
                         Box(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 32.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text("No ride requests available.", color = Color.Gray)
                         }
                     }
                 } else {
-                    items(requestItems) { ride ->
-                        RequestItem(ride = ride, driverDashboardViewModel = driverDashboardViewModel)
+                    val filteredList = when (selectedHistoryFilter) {
+                        "All" -> requestItems
+                        else -> requestItems.filter {
+                            it.rideType.equals(
+                                selectedHistoryFilter,
+                                ignoreCase = true
+                            )
+                        }
+                    }
+
+                    if (filteredList.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 32.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("No requests match this ride type.", color = Color.Gray)
+                            }
+                        }
+                    } else {
+                        items(filteredList) { ride ->
+                            RequestItem(
+                                ride = ride,
+                                driverDashboardViewModel = driverDashboardViewModel
+                            )
+                        }
                     }
                 }
+
             }
             "Reservations" -> {
                 item {
@@ -338,7 +387,6 @@ fun RideRouteInfo(start: String, end: String) {
             )
         }
 
-        // Locations
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 text = start,
@@ -385,13 +433,78 @@ fun ReservationsContent(
             colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text("Your Reservation", fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(12.dp))
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = reservation!!.createdAt.toString(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Gray
+                        )
 
-                Text("Pickup: ${reservation!!.pickUpAddress}")
-                Text("Dropoff: ${reservation!!.dropOffAddress}")
-                Text("Time: ${reservation!!.appointmentTime}")
+                        RideRouteInfo(
+                            start = reservation!!.pickUpAddress,
+                            end = reservation!!.dropOffAddress
+                        )
+                    }
+
+                    Column(
+                        horizontalAlignment = Alignment.End,
+                        verticalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.height(IntrinsicSize.Min)
+                    ) {
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = "Rp ${formatRupiah(reservation!!.price)}",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = reservation!!.rideType,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        Button(
+                            onClick = {
+                                reservation?.id?.let { rideId ->
+                                    driverDashboardViewModel.cancelReservation(
+                                        rideId,
+                                        onSuccess = {
+                                            println("DEBUG → Cancel successful")
+                                        },
+                                        onFailure = { e ->
+                                            println("❌ Cancel failed: ${e.message}")
+                                        }
+                                    )
+                                }
+                            },
+                            shape = RoundedCornerShape(50),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            modifier = Modifier.height(36.dp)
+                        ) {
+                            Text("Cancel", fontSize = 12.sp)
+                        }
+                    }
+                }
             }
         }
     }
